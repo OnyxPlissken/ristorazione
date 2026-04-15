@@ -189,15 +189,18 @@ model DiningTable {
 }
 
 model Menu {
-  id          String        @id @default(cuid())
-  locationId  String
-  name        String
-  description String?
-  isActive    Boolean       @default(true)
-  createdAt   DateTime      @default(now())
-  updatedAt   DateTime      @updatedAt
-  location    Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
-  sections    MenuSection[]
+  id                    String        @id @default(cuid())
+  locationId            String
+  name                  String
+  description           String?
+  isActive              Boolean       @default(true)
+  deliveryEnabled       Boolean       @default(false)
+  appliesToAllLocations Boolean       @default(false)
+  locationIds           String[]      @default([])
+  createdAt             DateTime      @default(now())
+  updatedAt             DateTime      @updatedAt
+  location              Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  sections              MenuSection[]
 }
 
 model MenuSection {

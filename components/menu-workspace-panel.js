@@ -10,6 +10,7 @@ import {
 import { euro } from "../lib/format";
 import { MENU_SECTION_TEMPLATES } from "../lib/constants";
 import { AdminDialog } from "./admin-dialog";
+import MenuLocationPicker from "./menu-location-picker";
 
 function countMenuItems(menu) {
   return menu.sections.reduce((sum, section) => sum + section.items.length, 0);
@@ -88,6 +89,8 @@ function menuAvailabilityToggleClasses(available) {
 
 export default function MenuWorkspacePanel({
   canManageMenus,
+  locations,
+  allowAllLocations,
   selectedMenu
 }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -150,12 +153,12 @@ export default function MenuWorkspacePanel({
           <h2>{selectedMenu.name}</h2>
           <p>{selectedMenu.description || "Nessuna descrizione impostata."}</p>
           <p className="menu-panel-location">
-            Sede: {selectedMenu.locationName}
-            {selectedMenu.locationCity ? ` / ${selectedMenu.locationCity}` : ""}
+            Sedi: {selectedMenu.locationSummary || "Nessuna sede assegnata"}
           </p>
         </div>
         <div className="row-meta">
           <span>{selectedMenu.isActive ? "Menu attivo" : "Menu non attivo"}</span>
+          <span>{selectedMenu.deliveryEnabled ? "Abilitato delivery" : "Solo sede / sala"}</span>
           <span>
             {selectedMenu.sections.length} sezioni / {countMenuItems(selectedMenu)} piatti
           </span>
@@ -171,7 +174,6 @@ export default function MenuWorkspacePanel({
           >
             <form action={saveMenuAction} className="entity-form">
               <input name="menuId" type="hidden" value={selectedMenu.id} />
-              <input name="locationId" type="hidden" value={selectedMenu.locationId} />
               <div className="form-grid">
                 <label>
                   <span>Nome menu</span>
@@ -182,15 +184,31 @@ export default function MenuWorkspacePanel({
                   <input defaultValue={selectedMenu.description || ""} name="description" type="text" />
                 </label>
               </div>
-              <div className="entity-footer">
+              <div className="checkbox-grid">
                 <label className="checkbox-item">
                   <input defaultChecked={selectedMenu.isActive} name="isActive" type="checkbox" />
                   <span>{selectedMenu.isActive ? "Attivo" : "Disattivo"}</span>
                 </label>
-                <button className="button button-primary" type="submit">
-                  Aggiorna menu
-                </button>
+                <label className="checkbox-item">
+                  <input defaultChecked={selectedMenu.deliveryEnabled} name="deliveryEnabled" type="checkbox" />
+                  <span>{selectedMenu.deliveryEnabled ? "Valido per delivery" : "Non valido per delivery"}</span>
+                </label>
               </div>
+              <MenuLocationPicker
+                allowAll={allowAllLocations}
+                defaultAll={selectedMenu.appliesToAllLocations}
+                defaultSelectedIds={selectedMenu.assignedLocationIds}
+                locations={locations}
+                preferredLocationId={selectedMenu.locationId}
+              />
+              {!allowAllLocations ? (
+                <p className="helper-copy">
+                  Il profilo corrente puo&apos; assegnare il menu solo alle sedi che gestisce direttamente.
+                </p>
+              ) : null}
+              <button className="button button-primary" type="submit">
+                Aggiorna menu
+              </button>
             </form>
           </AdminDialog>
 

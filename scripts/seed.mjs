@@ -176,6 +176,9 @@ async function main() {
             name: "Menu principale",
             description: "Prima configurazione del ristorante",
             isActive: true,
+            deliveryEnabled: false,
+            appliesToAllLocations: false,
+            locationIds: [],
             sections: {
               create: [
                 {

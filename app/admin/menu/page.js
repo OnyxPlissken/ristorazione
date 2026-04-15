@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminDialog } from "../../../components/admin-dialog";
+import MenuLocationPicker from "../../../components/menu-location-picker";
 import MenuWorkspacePanel from "../../../components/menu-workspace-panel";
 import { requireUser } from "../../../lib/auth";
 import { saveMenuAction } from "../../../lib/actions/admin-actions";
@@ -24,13 +25,9 @@ function countMenuItems(menu) {
   return menu.sections.reduce((sum, section) => sum + section.items.length, 0);
 }
 
-function serializeMenu(menu, location) {
+function serializeMenu(menu) {
   return {
     ...menu,
-    locationId: location.id,
-    locationName: location.name,
-    locationCity: location.city || "",
-    locationAddress: location.address || "",
     sections: menu.sections.map((section) => ({
       ...section,
       items: section.items.map((item) => ({
@@ -42,8 +39,19 @@ function serializeMenu(menu, location) {
 }
 
 function flattenMenus(locations) {
-  return locations.flatMap((location) =>
-    location.menus.map((menu) => serializeMenu(menu, location))
+  const byId = new Map();
+
+  for (const location of locations) {
+    for (const menu of location.menus) {
+      if (!byId.has(menu.id)) {
+        byId.set(menu.id, serializeMenu(menu));
+      }
+    }
+  }
+
+  return [...byId.values()].sort(
+    (left, right) =>
+      naturalCompare(left.name, right.name) || naturalCompare(left.locationSummary || "", right.locationSummary || "")
   );
 }
 
@@ -68,6 +76,7 @@ export default async function MenuPage({ searchParams }) {
   const locations = sortLocations(await getAccessibleLocations(user));
   const flattenedMenus = flattenMenus(locations);
   const selectedMenu = flattenedMenus.find((menu) => menu.id === requestedMenuId) || flattenedMenus[0] || null;
+  const allowAllLocations = ["ADMIN", "PROPRIETARIO"].includes(user.role);
 
   if (!locations.length) {
     return (
@@ -115,16 +124,6 @@ export default async function MenuPage({ searchParams }) {
               <form action={saveMenuAction} className="entity-form">
                 <div className="form-grid">
                   <label>
-                    <span>Sede</span>
-                    <select defaultValue={selectedMenu?.locationId || locations[0]?.id} name="locationId">
-                      {locations.map((location) => (
-                        <option key={location.id} value={location.id}>
-                          {location.name}
-                        </option>
-                      ))}
-                    </select>
-                  </label>
-                  <label>
                     <span>Nome menu</span>
                     <input name="name" placeholder="Menu principale" required type="text" />
                   </label>
@@ -137,10 +136,28 @@ export default async function MenuPage({ searchParams }) {
                     />
                   </label>
                 </div>
-                <label className="checkbox-item">
-                  <input defaultChecked name="isActive" type="checkbox" />
-                  <span>Menu attivo</span>
-                </label>
+                <div className="checkbox-grid">
+                  <label className="checkbox-item">
+                    <input defaultChecked name="isActive" type="checkbox" />
+                    <span>Menu attivo</span>
+                  </label>
+                  <label className="checkbox-item">
+                    <input name="deliveryEnabled" type="checkbox" />
+                    <span>Valido anche per delivery</span>
+                  </label>
+                </div>
+                <MenuLocationPicker
+                  allowAll={allowAllLocations}
+                  defaultAll={false}
+                  defaultSelectedIds={selectedMenu?.assignedLocationIds || [locations[0]?.id].filter(Boolean)}
+                  locations={locations}
+                  preferredLocationId={selectedMenu?.assignedLocationIds?.[0] || locations[0]?.id || ""}
+                />
+                {!allowAllLocations ? (
+                  <p className="helper-copy">
+                    Il profilo corrente puo&apos; creare menu solo sulle sedi che gestisce direttamente.
+                  </p>
+                ) : null}
                 <button className="button button-primary" type="submit">
                   Salva menu
                 </button>
@@ -162,8 +179,7 @@ export default async function MenuPage({ searchParams }) {
                     key={menu.id}
                   >
                     <small className="menu-tab-eyebrow">
-                      {menu.locationName}
-                      {menu.locationCity ? ` / ${menu.locationCity}` : ""}
+                      {menu.appliesToAllLocations ? "Tutte le sedi" : menu.locationSummary}
                     </small>
                     <strong>{menu.name}</strong>
                     <span>{menu.description || "Nessuna descrizione"}</span>
@@ -178,6 +194,8 @@ export default async function MenuPage({ searchParams }) {
             {selectedMenu ? (
               <MenuWorkspacePanel
                 canManageMenus={canManageMenus}
+                allowAllLocations={allowAllLocations}
+                locations={locations}
                 selectedMenu={selectedMenu}
               />
             ) : null}
@@ -186,8 +204,8 @@ export default async function MenuPage({ searchParams }) {
           <section className="section-card">
             <div className="panel-header">
               <div>
-                <h2>Nessun menu in questa sede</h2>
-                <p>Crea il primo menu per iniziare a organizzare sezioni e piatti del locale.</p>
+                <h2>Nessun menu configurato</h2>
+                <p>Crea il primo menu e decidi subito se vale per una sede, piu&apos; sedi o tutte.</p>
               </div>
             </div>
           </section>
