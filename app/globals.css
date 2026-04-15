@@ -970,6 +970,106 @@ textarea {
   justify-content: start;
 }
 
+.user-list {
+  display: grid;
+  gap: 14px;
+}
+
+.user-list-head,
+.user-list-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(140px, 0.7fr) minmax(260px, 1.4fr) minmax(120px, 0.7fr) auto;
+  gap: 16px;
+  align-items: start;
+}
+
+.user-list-head {
+  padding: 0 12px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.user-list-row {
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.user-cell {
+  display: grid;
+  gap: 10px;
+}
+
+.user-cell-label {
+  display: none;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.user-primary strong {
+  font-size: 1rem;
+}
+
+.user-primary p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.user-role-cell,
+.user-status-cell {
+  align-content: center;
+}
+
+.user-actions {
+  justify-items: end;
+}
+
+.user-tag,
+.location-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.user-tag {
+  font-weight: 700;
+}
+
+.user-tag.success {
+  background: rgba(32, 89, 65, 0.12);
+  color: #1d5d44;
+}
+
+.user-tag.muted,
+.location-chip.empty {
+  background: rgba(19, 35, 30, 0.08);
+  color: var(--muted);
+}
+
+.location-chip.highlighted {
+  background: rgba(157, 68, 40, 0.12);
+  color: #7d2d17;
+}
+
+.location-chip-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
 .table-admin-layout {
   grid-template-columns: 1.05fr 0.95fr 0.95fr;
   align-items: start;
@@ -1449,10 +1549,24 @@ textarea {
   .booking-grid,
   .feature-grid,
   .form-grid,
+  .user-list-head,
+  .user-list-row,
   .table-admin-layout,
   .page-actions,
   .status-filter-grid {
     grid-template-columns: 1fr;
+  }
+
+  .user-list-head {
+    display: none;
+  }
+
+  .user-cell-label {
+    display: inline-flex;
+  }
+
+  .user-actions {
+    justify-items: start;
   }
 
   .admin-shell,
