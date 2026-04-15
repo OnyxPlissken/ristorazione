@@ -379,7 +379,7 @@ button {
 
 .stats-grid {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 16px;
 }
 
@@ -803,6 +803,18 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 14px;
+}
+
+.inline-field,
+.section-title {
+  display: grid;
+  gap: 8px;
+}
+
+.section-title {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  margin-bottom: 14px;
 }
 
 .hours-row,

@@ -8,10 +8,12 @@ Coperto e' un gestionale per ristorazione costruito con Next.js e Postgres, pens
 - ruoli `Admin`, `Proprietario`, `Store Manager`, `Staff`
 - gestione sedi e multisede
 - gestione tavoli e generazione rapida numerazione
+- QR tavolo con sessione condivisa e carrello persistente
 - gestione menu, sezioni e piatti
 - orari di apertura e impostazioni prenotazione
 - pagina pubblica `/prenota`
 - pannello amministrativo `/admin`
+- `Console Admin` riservata agli utenti `Admin` per feature flag, delivery, Google Business e pagamenti
 
 ## Stack
 

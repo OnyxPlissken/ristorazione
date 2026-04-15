@@ -24,6 +24,7 @@ export default async function AdminHomePage() {
         <StatCard label="Tavoli configurati" value={data.stats.tables} />
         <StatCard label="Menu attivi" value={data.stats.menus} />
         <StatCard label="Prenotazioni registrate" value={data.stats.reservations} />
+        <StatCard label="Sessioni QR aperte" value={data.stats.qrSessions} />
       </section>
 
       <section className="panel-card">
@@ -37,7 +38,7 @@ export default async function AdminHomePage() {
               <div>
                 <strong>{reservation.guestName}</strong>
                 <p>
-                  {reservation.location.name}
+                  {reservation.locationLabel}
                   {reservation.table ? ` / Tavolo ${reservation.table.code}` : " / Da assegnare"}
                 </p>
               </div>

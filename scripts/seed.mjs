@@ -63,6 +63,17 @@ async function main() {
             requireEmail: true
           }
         },
+        technicalSettings: {
+          create: {
+            displayName: "Sede Centrale",
+            qrEnabled: true,
+            reservationsEnabled: true,
+            deliveryEnabled: false,
+            paymentsEnabled: false,
+            googleBusinessEnabled: false,
+            reservationEmails: "booking@sede-centrale.it"
+          }
+        },
         openingHours: {
           create: [
             { weekday: 1, opensAt: "12:00", closesAt: "23:00", isClosed: false },
@@ -138,6 +149,23 @@ async function main() {
     create: {
       userId: admin.id,
       locationId: location.id
+    }
+  });
+
+  await prisma.locationTechnicalSetting.upsert({
+    where: {
+      locationId: location.id
+    },
+    update: {},
+    create: {
+      locationId: location.id,
+      displayName: location.name,
+      qrEnabled: true,
+      reservationsEnabled: true,
+      deliveryEnabled: false,
+      paymentsEnabled: false,
+      googleBusinessEnabled: false,
+      reservationEmails: "booking@sede-centrale.it"
     }
   });
 

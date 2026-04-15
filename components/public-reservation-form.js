@@ -27,7 +27,7 @@ export default function PublicReservationForm({ locations }) {
           <select name="locationId" required>
             {locations.map((location) => (
               <option key={location.id} value={location.id}>
-                {location.name} - {location.city}
+                {(location.publicName || location.name)} - {location.city}
               </option>
             ))}
           </select>

@@ -15,9 +15,15 @@ const navigation = [
 
 export default async function AdminLayout({ children }) {
   const user = await requireUser();
-  const items = canManageUsers(user)
-    ? [...navigation, { href: "/admin/utenti", label: "Utenti" }]
-    : navigation;
+  const items = [...navigation];
+
+  if (canManageUsers(user)) {
+    items.push({ href: "/admin/utenti", label: "Utenti" });
+  }
+
+  if (user.role === "ADMIN") {
+    items.push({ href: "/admin/console", label: "Console Admin" });
+  }
 
   return (
     <div className="admin-shell">

@@ -39,7 +39,7 @@ export default async function PrenotaPage() {
             {locations.map((location) => (
               <article className="panel-card" key={location.id}>
                 <div className="panel-header">
-                  <h2>{location.settings?.pageTitle || location.name}</h2>
+                  <h2>{location.settings?.pageTitle || location.publicName || location.name}</h2>
                   <p>
                     {location.address}, {location.city}
                   </p>

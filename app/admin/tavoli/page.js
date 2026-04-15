@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { canManageBusiness, requireUser } from "../../../lib/auth";
 import { generateTablesAction, saveTableAction } from "../../../lib/actions/admin-actions";
 import { getAccessibleLocations } from "../../../lib/queries";
@@ -110,10 +111,13 @@ export default async function TavoliPage() {
                   </label>
                 </div>
                 <div className="entity-footer">
-                  <label className="checkbox-item">
-                    <input defaultChecked={table.active} name="active" type="checkbox" />
-                    <span>{table.active ? "Attivo" : "Disattivo"}</span>
-                  </label>
+                  <div className="auth-links">
+                    <label className="checkbox-item">
+                      <input defaultChecked={table.active} name="active" type="checkbox" />
+                      <span>{table.active ? "Attivo" : "Disattivo"}</span>
+                    </label>
+                    <Link href={`/table/${table.id}`}>Apri QR tavolo</Link>
+                  </div>
                   <button className="button button-primary" type="submit">
                     Aggiorna tavolo
                   </button>

@@ -31,6 +31,13 @@ enum ReservationSource {
   WALK_IN
 }
 
+enum TableSessionStatus {
+  OPEN
+  PAYMENT_REQUESTED
+  PAID
+  CLOSED
+}
+
 model User {
   id             String         @id @default(cuid())
   name           String
@@ -69,7 +76,38 @@ model Location {
   menus               Menu[]
   reservations        Reservation[]
   settings            ReservationSetting?
+  technicalSettings   LocationTechnicalSetting?
+  tableSessions       TableSession[]
   userAssignments     UserLocation[]
+}
+
+model LocationTechnicalSetting {
+  id                      String    @id @default(cuid())
+  locationId              String    @unique
+  displayName             String?
+  qrEnabled               Boolean   @default(false)
+  reservationsEnabled     Boolean   @default(true)
+  deliveryEnabled         Boolean   @default(false)
+  paymentsEnabled         Boolean   @default(false)
+  googleBusinessEnabled   Boolean   @default(false)
+  reservationEmails       String?
+  deliveryProvider        String?
+  deliveryApiBaseUrl      String?
+  deliveryApiKey          String?
+  deliveryWebhookSecret   String?
+  googleBusinessPlaceId   String?
+  googleBusinessAccountId String?
+  googleBusinessLocationId String?
+  googleBusinessApiKey    String?
+  paymentProvider         String?
+  paymentPublicKey        String?
+  paymentApiKey           String?
+  paymentWebhookSecret    String?
+  paymentCheckoutBaseUrl  String?
+  technicalNotes          String?
+  createdAt               DateTime  @default(now())
+  updatedAt               DateTime  @updatedAt
+  location                Location  @relation(fields: [locationId], references: [id], onDelete: Cascade)
 }
 
 model UserLocation {
@@ -95,16 +133,17 @@ model OpeningHour {
 }
 
 model DiningTable {
-  id         String        @id @default(cuid())
-  locationId String
-  code       String
-  seats      Int
-  zone       String?
-  active     Boolean       @default(true)
-  createdAt  DateTime      @default(now())
-  updatedAt  DateTime      @updatedAt
-  location   Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  id           String        @id @default(cuid())
+  locationId   String
+  code         String
+  seats        Int
+  zone         String?
+  active       Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  location     Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
   reservations Reservation[]
+  sessions     TableSession[]
 
   @@unique([locationId, code])
 }
@@ -131,15 +170,16 @@ model MenuSection {
 }
 
 model MenuItem {
-  id          String     @id @default(cuid())
-  sectionId   String
-  name        String
-  description String?
-  price       Decimal    @db.Decimal(10, 2)
-  allergens   String?
-  available   Boolean    @default(true)
-  sortOrder   Int        @default(0)
-  section     MenuSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  id           String             @id @default(cuid())
+  sectionId    String
+  name         String
+  description  String?
+  price        Decimal            @db.Decimal(10, 2)
+  allergens    String?
+  available    Boolean            @default(true)
+  sortOrder    Int                @default(0)
+  section      MenuSection        @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  sessionItems TableSessionItem[]
 }
 
 model ReservationSetting {
@@ -172,4 +212,51 @@ model Reservation {
   updatedAt   DateTime          @updatedAt
   location    Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
   table       DiningTable?      @relation(fields: [tableId], references: [id], onDelete: SetNull)
+}
+
+model TableSession {
+  id                 String             @id @default(cuid())
+  token              String             @unique @default(cuid())
+  locationId         String
+  tableId            String
+  status             TableSessionStatus @default(OPEN)
+  paymentRequestedAt DateTime?
+  paidAt             DateTime?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  location           Location           @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  table              DiningTable        @relation(fields: [tableId], references: [id], onDelete: Cascade)
+  seats              TableSessionSeat[]
+  items              TableSessionItem[]
+
+  @@index([tableId, status])
+}
+
+model TableSessionSeat {
+  id        String             @id @default(cuid())
+  sessionId String
+  code      String
+  label     String
+  createdAt DateTime           @default(now())
+  updatedAt DateTime           @updatedAt
+  session   TableSession       @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  items     TableSessionItem[]
+
+  @@unique([sessionId, code])
+}
+
+model TableSessionItem {
+  id         String           @id @default(cuid())
+  sessionId  String
+  seatId     String?
+  menuItemId String?
+  name       String
+  unitPrice  Decimal          @db.Decimal(10, 2)
+  quantity   Int              @default(1)
+  note       String?
+  createdAt  DateTime         @default(now())
+  updatedAt  DateTime         @updatedAt
+  session    TableSession     @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  seat       TableSessionSeat? @relation(fields: [seatId], references: [id], onDelete: SetNull)
+  menuItem   MenuItem?        @relation(fields: [menuItemId], references: [id], onDelete: SetNull)
 }
