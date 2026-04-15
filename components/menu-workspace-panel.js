@@ -76,6 +76,16 @@ function MenuItemPreview({ item }) {
   );
 }
 
+function menuAvailabilityClasses(available) {
+  return available ? "menu-availability-chip is-available" : "menu-availability-chip is-unavailable";
+}
+
+function menuAvailabilityToggleClasses(available) {
+  return available
+    ? "checkbox-item menu-availability-toggle is-available"
+    : "checkbox-item menu-availability-toggle is-unavailable";
+}
+
 export default function MenuWorkspacePanel({
   canManageMenus,
   selectedMenu
@@ -360,7 +370,7 @@ export default function MenuWorkspacePanel({
                           />
                         </label>
                       </div>
-                      <label className="checkbox-item">
+                      <label className={menuAvailabilityToggleClasses(true)}>
                         <input defaultChecked name="available" type="checkbox" />
                         <span>Disponibile</span>
                       </label>
@@ -404,7 +414,7 @@ export default function MenuWorkspacePanel({
 
                       <div className="menu-table-status">
                         <span className="menu-cell-label">Stato</span>
-                        <span className={item.available ? "location-chip highlighted" : "location-chip empty"}>
+                        <span className={menuAvailabilityClasses(item.available)}>
                           {item.available ? "Disponibile" : "Non disponibile"}
                         </span>
                       </div>
@@ -462,7 +472,7 @@ export default function MenuWorkspacePanel({
                                 </label>
                               </div>
                               <div className="entity-footer">
-                                <label className="checkbox-item">
+                                <label className={menuAvailabilityToggleClasses(item.available)}>
                                   <input defaultChecked={item.available} name="available" type="checkbox" />
                                   <span>{item.available ? "Disponibile" : "Non disponibile"}</span>
                                 </label>
