@@ -1125,6 +1125,51 @@ textarea {
   color: var(--muted);
 }
 
+.menu-workspace {
+  display: grid;
+  gap: 18px;
+}
+
+.menu-tab-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.menu-tab {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  border-radius: 18px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(255, 255, 255, 0.42);
+  color: var(--muted);
+}
+
+.menu-tab strong {
+  color: var(--text);
+}
+
+.menu-tab span,
+.menu-tab small {
+  color: inherit;
+}
+
+.menu-tab.active {
+  background: rgba(19, 35, 30, 0.92);
+  border-color: transparent;
+  color: rgba(255, 248, 239, 0.78);
+}
+
+.menu-tab.active strong {
+  color: var(--text-inverse);
+}
+
+.menu-active-panel {
+  display: grid;
+  gap: 18px;
+}
+
 .section-template-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -1156,7 +1201,8 @@ textarea {
   border-color: rgba(157, 68, 40, 0.34);
 }
 
-.menu-section-card {
+.menu-section-card,
+.menu-accordion {
   display: grid;
   gap: 16px;
   padding: 20px;
@@ -1165,9 +1211,130 @@ textarea {
   border: 1px solid rgba(19, 35, 30, 0.08);
 }
 
+.menu-accordion-stack {
+  display: grid;
+  gap: 14px;
+}
+
+.menu-accordion {
+  padding: 0;
+  overflow: hidden;
+}
+
+.menu-accordion-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 18px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.menu-accordion-summary::-webkit-details-marker {
+  display: none;
+}
+
+.menu-accordion-copy {
+  display: grid;
+  gap: 6px;
+}
+
+.menu-accordion-copy p {
+  margin: 0;
+  color: var(--muted);
+}
+
+.menu-accordion-meta {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.menu-accordion-body {
+  display: grid;
+  gap: 16px;
+  padding: 0 20px 20px;
+  border-top: 1px solid rgba(19, 35, 30, 0.08);
+}
+
 .menu-item-list {
   display: grid;
   gap: 12px;
+}
+
+.menu-table {
+  display: grid;
+  gap: 10px;
+}
+
+.menu-table-head,
+.menu-table-row {
+  display: grid;
+  grid-template-columns: 112px minmax(220px, 2fr) minmax(90px, 0.8fr) minmax(130px, 0.95fr) minmax(150px, 1.1fr) minmax(80px, 0.6fr) auto;
+  gap: 14px;
+  align-items: start;
+}
+
+.menu-table-head {
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.menu-table-row {
+  padding: 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+  border: 1px solid rgba(19, 35, 30, 0.08);
+}
+
+.menu-table-photo,
+.menu-table-main,
+.menu-table-price,
+.menu-table-status,
+.menu-table-allergens,
+.menu-table-order,
+.menu-table-actions {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  min-width: 0;
+}
+
+.menu-table-main strong,
+.menu-table-price strong {
+  display: block;
+}
+
+.menu-table-main p,
+.menu-table-allergens span,
+.menu-table-order span {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.menu-table-price,
+.menu-table-order {
+  justify-items: start;
+}
+
+.menu-table-actions {
+  justify-items: end;
+}
+
+.menu-cell-label {
+  display: none;
+  font-size: 0.76rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .menu-item-row {
@@ -1726,6 +1893,7 @@ textarea {
   .form-grid,
   .user-list-head,
   .user-list-row,
+  .menu-tab-list,
   .section-template-grid,
   .table-admin-layout,
   .page-actions,
@@ -1737,7 +1905,15 @@ textarea {
     display: none;
   }
 
+  .menu-table-head {
+    display: none;
+  }
+
   .user-cell-label {
+    display: inline-flex;
+  }
+
+  .menu-cell-label {
     display: inline-flex;
   }
 
@@ -1779,7 +1955,8 @@ textarea {
   .table-card-actions,
   .menu-admin-header,
   .menu-section-header,
-  .menu-item-title-row {
+  .menu-item-title-row,
+  .menu-accordion-summary {
     flex-direction: column;
     align-items: flex-start;
   }
@@ -1802,6 +1979,14 @@ textarea {
   .admin-toolbar-actions {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .menu-table-row {
+    grid-template-columns: 1fr;
+  }
+
+  .menu-table-actions {
+    justify-items: start;
   }
 
   .menu-item-row {
