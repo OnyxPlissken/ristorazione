@@ -1592,21 +1592,23 @@ textarea {
   position: fixed;
   inset: 0;
   z-index: 80;
-  display: block;
-  overflow-y: auto;
+  display: flex;
+  align-items: stretch;
+  justify-content: flex-end;
   padding: 12px;
   background: rgba(11, 20, 17, 0.46);
   backdrop-filter: blur(10px);
 }
 
 .modal-shell {
-  width: min(1280px, calc(100vw - 24px));
+  width: min(860px, calc(100vw - 24px));
   min-height: calc(100vh - 24px);
-  margin: 0 auto;
+  max-height: calc(100vh - 24px);
+  margin-left: auto;
   display: grid;
   align-content: start;
   gap: 20px;
-  overflow: visible;
+  overflow-y: auto;
   padding: 24px 24px 28px;
   border-radius: 32px;
   background: rgba(255, 248, 239, 0.96);
@@ -1615,11 +1617,18 @@ textarea {
 }
 
 .modal-header {
+  position: sticky;
+  top: -24px;
+  z-index: 1;
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
   gap: 16px;
-  margin-bottom: 20px;
+  margin: -24px -24px 0;
+  padding: 24px 24px 18px;
+  background: rgba(255, 248, 239, 0.96);
+  border-bottom: 1px solid rgba(19, 35, 30, 0.08);
+  backdrop-filter: blur(12px);
 }
 
 .modal-header h2 {
@@ -1645,6 +1654,7 @@ textarea {
   display: grid;
   gap: 18px;
   align-content: start;
+  padding-top: 2px;
 }
 
 .reservation-toolbar {
@@ -2175,11 +2185,15 @@ textarea {
   .modal-shell {
     width: 100%;
     min-height: 100vh;
+    max-height: 100vh;
     padding: 18px 16px 28px;
     border-radius: 0;
   }
 
   .modal-header {
+    top: -18px;
+    margin: -18px -16px 0;
+    padding: 18px 16px 16px;
     flex-direction: column;
     align-items: flex-start;
   }
