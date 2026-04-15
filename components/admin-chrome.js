@@ -5,20 +5,6 @@ import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
 import { logoutAction } from "../lib/actions/auth-actions";
 import AdminSidebarNav from "./admin-sidebar-nav";
 
-function BurgerIcon() {
-  return (
-    <svg aria-hidden="true" viewBox="0 0 24 24">
-      <path
-        d="M4 7h16M4 12h16M4 17h16"
-        fill="none"
-        stroke="currentColor"
-        strokeLinecap="round"
-        strokeWidth="1.8"
-      />
-    </svg>
-  );
-}
-
 function BellIcon() {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
@@ -30,15 +16,29 @@ function BellIcon() {
   );
 }
 
-function CloseIcon() {
+function SidebarToggleIcon({ hidden }) {
   return (
     <svg aria-hidden="true" viewBox="0 0 24 24">
       <path
-        d="M6 6l12 12M18 6L6 18"
+        d="M5 5.5h14a1.5 1.5 0 0 1 1.5 1.5v10A1.5 1.5 0 0 1 19 18.5H5A1.5 1.5 0 0 1 3.5 17V7A1.5 1.5 0 0 1 5 5.5Z"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.6"
+      />
+      <path
+        d={hidden ? "M8.5 8.5l3 3-3 3" : "M11.5 8.5l-3 3 3 3"}
         fill="none"
         stroke="currentColor"
         strokeLinecap="round"
+        strokeLinejoin="round"
         strokeWidth="1.8"
+      />
+      <path
+        d={hidden ? "M6.5 7v10" : "M17.5 7v10"}
+        fill="none"
+        stroke="currentColor"
+        strokeLinecap="round"
+        strokeWidth="1.6"
       />
     </svg>
   );
@@ -63,17 +63,27 @@ export default function AdminChrome({
   userName,
   userRoleLabel
 }) {
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(initialReservationSummary?.pendingCount || 0);
   const [recentReservations, setRecentReservations] = useState(
     initialReservationSummary?.recentReservations || []
   );
   const [unseenIds, setUnseenIds] = useState([]);
-  const knownIdsRef = useRef(new Set((initialReservationSummary?.recentReservations || []).map((item) => item.id)));
+  const knownIdsRef = useRef(
+    new Set((initialReservationSummary?.recentReservations || []).map((item) => item.id))
+  );
   const bellShellRef = useRef(null);
-  const drawerRef = useRef(null);
   const canWatchReservations = items.some((item) => item.page === "reservations");
+
+  useEffect(() => {
+    const storedValue = window.localStorage.getItem("coperto-admin-sidebar-hidden");
+    setSidebarHidden(storedValue === "1");
+  }, []);
+
+  useEffect(() => {
+    window.localStorage.setItem("coperto-admin-sidebar-hidden", sidebarHidden ? "1" : "0");
+  }, [sidebarHidden]);
 
   const syncSummary = useEffectEvent((summary) => {
     if (!summary) {
@@ -162,7 +172,6 @@ export default function AdminChrome({
     function handleKeyDown(event) {
       if (event.key === "Escape") {
         setBellOpen(false);
-        setDrawerOpen(false);
       }
     }
 
@@ -183,7 +192,7 @@ export default function AdminChrome({
       document.removeEventListener("mousedown", handleClick);
       document.removeEventListener("keydown", handleKeyDown);
     };
-  }, [bellOpen, drawerOpen]);
+  }, [bellOpen]);
 
   const notificationItems = useMemo(
     () =>
@@ -195,42 +204,20 @@ export default function AdminChrome({
   );
 
   return (
-    <div className="admin-shell">
-      <div
-        aria-hidden={drawerOpen ? "false" : "true"}
-        className={drawerOpen ? "admin-overlay active" : "admin-overlay"}
-        onClick={(event) => {
-          if (event.target === event.currentTarget) {
-            setDrawerOpen(false);
-          }
-        }}
-      >
-        <aside
-          className={drawerOpen ? "admin-sidebar is-open" : "admin-sidebar"}
-          id="admin-menu"
-          ref={drawerRef}
-        >
+    <div className={sidebarHidden ? "admin-shell sidebar-hidden" : "admin-shell"}>
+      <div className="admin-sidebar-wrap">
+        <aside className="admin-sidebar" id="admin-menu">
           <div className="admin-sidebar-header">
             <div>
-              <Link className="brand" href="/admin" onClick={() => setDrawerOpen(false)}>
+              <Link className="brand" href="/admin">
                 Coperto
               </Link>
               <p className="sidebar-copy">Gestionale ristorazione in italiano.</p>
             </div>
-
-            <button
-              aria-label="Chiudi menu"
-              className="icon-button icon-button-ghost"
-              onClick={() => setDrawerOpen(false)}
-              type="button"
-            >
-              <CloseIcon />
-            </button>
           </div>
 
           <AdminSidebarNav
             items={items}
-            onNavigate={() => setDrawerOpen(false)}
             pendingCount={pendingCount}
             showPermissions={showPermissions}
           />
@@ -253,13 +240,13 @@ export default function AdminChrome({
           <div className="admin-toolbar-left">
             <button
               aria-controls="admin-menu"
-              aria-expanded={drawerOpen ? "true" : "false"}
-              aria-label="Apri menu"
-              className="icon-button burger-button"
-              onClick={() => setDrawerOpen((current) => !current)}
+              aria-expanded={sidebarHidden ? "false" : "true"}
+              aria-label={sidebarHidden ? "Mostra menu laterale" : "Nascondi menu laterale"}
+              className="icon-button panel-toggle-button"
+              onClick={() => setSidebarHidden((current) => !current)}
               type="button"
             >
-              <BurgerIcon />
+              <SidebarToggleIcon hidden={sidebarHidden} />
             </button>
 
             <div>
@@ -274,7 +261,11 @@ export default function AdminChrome({
                 <button
                   aria-expanded={bellOpen ? "true" : "false"}
                   aria-label="Apri notifiche prenotazioni"
-                  className={bellOpen ? "icon-button notification-button active" : "icon-button notification-button"}
+                  className={
+                    bellOpen
+                      ? "icon-button notification-button active"
+                      : "icon-button notification-button"
+                  }
                   onClick={() => setBellOpen((current) => !current)}
                   type="button"
                 >
@@ -310,7 +301,9 @@ export default function AdminChrome({
                         >
                           <div className="notification-item-head">
                             <strong>{reservation.guestName}</strong>
-                            {reservation.isUnseen ? <span className="notification-pill">Nuova</span> : null}
+                            {reservation.isUnseen ? (
+                              <span className="notification-pill">Nuova</span>
+                            ) : null}
                           </div>
                           <p>
                             {reservation.locationName} - {reservation.guests} ospiti
