@@ -1,7 +1,12 @@
 "use client";
 
 import { useDeferredValue, useState } from "react";
-import { saveMenuAction, saveMenuItemAction, saveMenuSectionAction } from "../lib/actions/admin-actions";
+import {
+  deleteMenuAction,
+  saveMenuAction,
+  saveMenuItemAction,
+  saveMenuSectionAction
+} from "../lib/actions/admin-actions";
 import { euro } from "../lib/format";
 import { MENU_SECTION_TEMPLATES } from "../lib/constants";
 import { AdminDialog } from "./admin-dialog";
@@ -118,6 +123,16 @@ export default function MenuWorkspacePanel({
     setAvailabilityFilter("ALL");
   }
 
+  function confirmDelete(event) {
+    const confirmed = window.confirm(
+      `Vuoi davvero eliminare il menu "${selectedMenu.name}"? Verranno eliminate anche le sue sezioni e i suoi piatti.`
+    );
+
+    if (!confirmed) {
+      event.preventDefault();
+    }
+  }
+
   return (
     <article className="section-card menu-active-panel">
       <div className="menu-admin-header">
@@ -192,6 +207,27 @@ export default function MenuWorkspacePanel({
               </div>
               <button className="button button-primary" type="submit">
                 Salva sezione
+              </button>
+            </form>
+          </AdminDialog>
+
+          <AdminDialog
+            buttonClassName="button button-danger"
+            buttonLabel="Elimina menu"
+            description="Questa azione elimina il menu selezionato insieme a sezioni e piatti collegati."
+            title={`Elimina ${selectedMenu.name}`}
+          >
+            <form action={deleteMenuAction} className="entity-form" onSubmit={confirmDelete}>
+              <input name="menuId" type="hidden" value={selectedMenu.id} />
+              <div className="note-box">
+                <strong>Conferma eliminazione</strong>
+                <p>
+                  Stai per eliminare il menu <strong>{selectedMenu.name}</strong> della sede{" "}
+                  <strong>{selectedMenu.locationName}</strong>. L&apos;operazione non e&apos; reversibile.
+                </p>
+              </div>
+              <button className="button button-danger" type="submit">
+                Conferma eliminazione
               </button>
             </form>
           </AdminDialog>
