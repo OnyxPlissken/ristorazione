@@ -1279,6 +1279,7 @@ textarea {
 .notification-shell {
   position: relative;
   display: inline-flex;
+  z-index: 2;
 }
 
 .notification-button.active {
@@ -1412,9 +1413,13 @@ textarea {
   display: grid;
   align-content: start;
   gap: 22px;
+  overflow: visible;
 }
 
 .admin-topbar {
+  position: relative;
+  z-index: 30;
+  isolation: isolate;
   display: flex;
   align-items: center;
   justify-content: space-between;
