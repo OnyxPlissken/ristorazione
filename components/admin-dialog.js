@@ -34,6 +34,22 @@ export function AdminDialog({
     };
   }, [open]);
 
+  function handleSubmit(event) {
+    if (event.defaultPrevented) {
+      return;
+    }
+
+    const target = event.target;
+
+    if (!(target instanceof HTMLFormElement)) {
+      return;
+    }
+
+    window.setTimeout(() => {
+      setOpen(false);
+    }, 0);
+  }
+
   return (
     <>
       <button className={buttonClassName} onClick={() => setOpen(true)} type="button">
@@ -47,6 +63,7 @@ export function AdminDialog({
             aria-modal="true"
             className="modal-shell"
             onClick={(event) => event.stopPropagation()}
+            onSubmit={handleSubmit}
             role="dialog"
           >
             <div className="modal-header">

@@ -1592,21 +1592,23 @@ textarea {
   position: fixed;
   inset: 0;
   z-index: 80;
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
+  display: block;
   overflow-y: auto;
-  padding: clamp(16px, 3vh, 28px) 24px 36px;
+  padding: 12px;
   background: rgba(11, 20, 17, 0.46);
   backdrop-filter: blur(10px);
 }
 
 .modal-shell {
-  width: min(820px, calc(100vw - 48px));
+  width: min(1280px, calc(100vw - 24px));
+  min-height: calc(100vh - 24px);
   margin: 0 auto;
+  display: grid;
+  align-content: start;
+  gap: 20px;
   overflow: visible;
-  padding: 24px;
-  border-radius: 28px;
+  padding: 24px 24px 28px;
+  border-radius: 32px;
   background: rgba(255, 248, 239, 0.96);
   border: 1px solid rgba(255, 255, 255, 0.6);
   box-shadow: var(--shadow);
@@ -1642,6 +1644,7 @@ textarea {
 .modal-body {
   display: grid;
   gap: 18px;
+  align-content: start;
 }
 
 .reservation-toolbar {
@@ -2166,12 +2169,14 @@ textarea {
   }
 
   .modal-backdrop {
-    padding: 12px;
+    padding: 0;
   }
 
   .modal-shell {
-    width: min(100%, 820px);
-    padding: 18px;
+    width: 100%;
+    min-height: 100vh;
+    padding: 18px 16px 28px;
+    border-radius: 0;
   }
 
   .modal-header {
