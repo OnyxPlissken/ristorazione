@@ -139,10 +139,19 @@ export default function TableOrdering({
           <div className="menu-grid">
             {menuItems.map((item) => (
               <article className="menu-card" key={item.id}>
-                <div>
+                {item.imageUrl ? (
+                  <img
+                    alt={item.name}
+                    className="menu-card-media"
+                    loading="lazy"
+                    src={item.imageUrl}
+                  />
+                ) : null}
+                <div className="menu-card-body">
                   <span className="menu-tag">{item.category}</span>
                   <h3>{item.name}</h3>
                   <p>{item.description || "Piatti e varianti configurati dal ristorante."}</p>
+                  {item.allergens ? <span className="menu-allergens">{item.allergens}</span> : null}
                 </div>
                 <div className="menu-actions">
                   <strong>{currency.format(item.price)}</strong>
