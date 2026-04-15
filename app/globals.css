@@ -1170,6 +1170,35 @@ textarea {
   gap: 18px;
 }
 
+.menu-filter-toolbar {
+  grid-template-columns: minmax(280px, 1.35fr) minmax(260px, 0.9fr);
+  align-items: end;
+  gap: 14px;
+  margin-bottom: 0;
+}
+
+.menu-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.menu-filter-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(19, 35, 30, 0.08);
+}
+
+.menu-filter-summary p {
+  margin: 0;
+  color: var(--muted);
+}
+
 .section-template-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -1893,6 +1922,7 @@ textarea {
   .form-grid,
   .user-list-head,
   .user-list-row,
+  .menu-filter-grid,
   .menu-tab-list,
   .section-template-grid,
   .table-admin-layout,
@@ -1963,6 +1993,7 @@ textarea {
 
   .feature-grid,
   .form-grid,
+  .menu-filter-toolbar,
   .location-switcher,
   .location-picker-grid,
   .zone-summary-grid,
@@ -1979,6 +2010,11 @@ textarea {
   .admin-toolbar-actions {
     width: 100%;
     justify-content: space-between;
+  }
+
+  .menu-filter-summary {
+    flex-direction: column;
+    align-items: flex-start;
   }
 
   .menu-table-row {
