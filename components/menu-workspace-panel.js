@@ -73,7 +73,6 @@ function MenuItemPreview({ item }) {
 
 export default function MenuWorkspacePanel({
   canManageMenus,
-  selectedLocationId,
   selectedMenu
 }) {
   const [searchQuery, setSearchQuery] = useState("");
@@ -125,6 +124,10 @@ export default function MenuWorkspacePanel({
         <div>
           <h2>{selectedMenu.name}</h2>
           <p>{selectedMenu.description || "Nessuna descrizione impostata."}</p>
+          <p className="menu-panel-location">
+            Sede: {selectedMenu.locationName}
+            {selectedMenu.locationCity ? ` / ${selectedMenu.locationCity}` : ""}
+          </p>
         </div>
         <div className="row-meta">
           <span>{selectedMenu.isActive ? "Menu attivo" : "Menu non attivo"}</span>
@@ -143,7 +146,7 @@ export default function MenuWorkspacePanel({
           >
             <form action={saveMenuAction} className="entity-form">
               <input name="menuId" type="hidden" value={selectedMenu.id} />
-              <input name="locationId" type="hidden" value={selectedLocationId} />
+              <input name="locationId" type="hidden" value={selectedMenu.locationId} />
               <div className="form-grid">
                 <label>
                   <span>Nome menu</span>

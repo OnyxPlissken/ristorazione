@@ -1150,6 +1150,14 @@ textarea {
   color: var(--text);
 }
 
+.menu-tab-eyebrow {
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--accent);
+}
+
 .menu-tab span,
 .menu-tab small {
   color: inherit;
@@ -1168,6 +1176,12 @@ textarea {
 .menu-active-panel {
   display: grid;
   gap: 18px;
+}
+
+.menu-panel-location {
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: var(--muted);
 }
 
 .menu-filter-toolbar {

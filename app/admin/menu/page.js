@@ -24,9 +24,13 @@ function countMenuItems(menu) {
   return menu.sections.reduce((sum, section) => sum + section.items.length, 0);
 }
 
-function serializeMenu(menu) {
+function serializeMenu(menu, location) {
   return {
     ...menu,
+    locationId: location.id,
+    locationName: location.name,
+    locationCity: location.city || "",
+    locationAddress: location.address || "",
     sections: menu.sections.map((section) => ({
       ...section,
       items: section.items.map((item) => ({
@@ -37,18 +41,21 @@ function serializeMenu(menu) {
   };
 }
 
-function getMenuHref(locationId, menuId) {
-  const params = new URLSearchParams();
+function flattenMenus(locations) {
+  return locations.flatMap((location) =>
+    location.menus.map((menu) => serializeMenu(menu, location))
+  );
+}
 
-  if (locationId) {
-    params.set("locationId", locationId);
-  }
+function getMenuHref(menuId) {
+  const params = new URLSearchParams();
 
   if (menuId) {
     params.set("menuId", menuId);
   }
 
-  return `/admin/menu?${params.toString()}`;
+  const query = params.toString();
+  return query ? `/admin/menu?${query}` : "/admin/menu";
 }
 
 export default async function MenuPage({ searchParams }) {
@@ -57,14 +64,10 @@ export default async function MenuPage({ searchParams }) {
 
   const params = await searchParams;
   const canManageMenus = canAccessPage(user, "menus", "manage");
-  const requestedLocationId = normalizeParam(params?.locationId);
   const requestedMenuId = normalizeParam(params?.menuId);
   const locations = sortLocations(await getAccessibleLocations(user));
-  const selectedLocation =
-    locations.find((location) => location.id === requestedLocationId) || locations[0] || null;
-  const selectedMenuRaw =
-    selectedLocation?.menus.find((menu) => menu.id === requestedMenuId) || selectedLocation?.menus[0] || null;
-  const selectedMenu = selectedMenuRaw ? serializeMenu(selectedMenuRaw) : null;
+  const flattenedMenus = flattenMenus(locations);
+  const selectedMenu = flattenedMenus.find((menu) => menu.id === requestedMenuId) || flattenedMenus[0] || null;
 
   if (!locations.length) {
     return (
@@ -79,8 +82,8 @@ export default async function MenuPage({ searchParams }) {
     );
   }
 
-  const totalSections = selectedLocation.menus.reduce((sum, menu) => sum + menu.sections.length, 0);
-  const totalItems = selectedLocation.menus.reduce((sum, menu) => sum + countMenuItems(menu), 0);
+  const totalSections = flattenedMenus.reduce((sum, menu) => sum + menu.sections.length, 0);
+  const totalItems = flattenedMenus.reduce((sum, menu) => sum + countMenuItems(menu), 0);
 
   return (
     <div className="page-stack">
@@ -97,10 +100,9 @@ export default async function MenuPage({ searchParams }) {
         <div className="panel-header">
           <div>
             <h2>Gestione menu</h2>
-            <p>Lavora una sede alla volta, poi scendi da menu a sezione fino ai singoli piatti.</p>
+            <p>Lavora direttamente sul menu: la sede resta un attributo del menu e non uno step separato.</p>
             <p className="menu-location-meta">
-              {selectedLocation.name} / {selectedLocation.city || "Sede"} / {selectedLocation.menus.length} menu /{" "}
-              {totalSections} sezioni / {totalItems} piatti
+              {flattenedMenus.length} menu su {locations.length} sedi / {totalSections} sezioni / {totalItems} piatti
             </p>
           </div>
           {canManageMenus ? (
@@ -108,11 +110,20 @@ export default async function MenuPage({ searchParams }) {
               buttonClassName="button button-primary"
               buttonLabel="Nuovo menu"
               description="Crea un nuovo menu per pranzo, cena, degustazione o delivery."
-              title={`Crea menu per ${selectedLocation.name}`}
+              title="Crea un nuovo menu"
             >
               <form action={saveMenuAction} className="entity-form">
-                <input name="locationId" type="hidden" value={selectedLocation.id} />
                 <div className="form-grid">
+                  <label>
+                    <span>Sede</span>
+                    <select defaultValue={selectedMenu?.locationId || locations[0]?.id} name="locationId">
+                      {locations.map((location) => (
+                        <option key={location.id} value={location.id}>
+                          {location.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
                   <label>
                     <span>Nome menu</span>
                     <input name="name" placeholder="Menu principale" required type="text" />
@@ -138,36 +149,22 @@ export default async function MenuPage({ searchParams }) {
           ) : null}
         </div>
 
-        <div className="location-picker-grid">
-          {locations.map((location) => {
-            const targetMenuId = location.id === selectedLocation.id ? selectedMenu?.id : location.menus[0]?.id;
-
-            return (
-              <Link
-                className={location.id === selectedLocation.id ? "location-pill active" : "location-pill"}
-                href={getMenuHref(location.id, targetMenuId)}
-                key={location.id}
-              >
-                <strong>{location.name}</strong>
-                <span>{location.city || "Senza citta'"}</span>
-                <small>{location.address || "Indirizzo non impostato"}</small>
-              </Link>
-            );
-          })}
-        </div>
-
-        {selectedLocation.menus.length ? (
+        {flattenedMenus.length ? (
           <>
             <div className="menu-tab-list">
-              {selectedLocation.menus.map((menu) => {
+              {flattenedMenus.map((menu) => {
                 const itemCount = countMenuItems(menu);
 
                 return (
                   <Link
                     className={menu.id === selectedMenu?.id ? "menu-tab active" : "menu-tab"}
-                    href={getMenuHref(selectedLocation.id, menu.id)}
+                    href={getMenuHref(menu.id)}
                     key={menu.id}
                   >
+                    <small className="menu-tab-eyebrow">
+                      {menu.locationName}
+                      {menu.locationCity ? ` / ${menu.locationCity}` : ""}
+                    </small>
                     <strong>{menu.name}</strong>
                     <span>{menu.description || "Nessuna descrizione"}</span>
                     <small>
@@ -181,7 +178,6 @@ export default async function MenuPage({ searchParams }) {
             {selectedMenu ? (
               <MenuWorkspacePanel
                 canManageMenus={canManageMenus}
-                selectedLocationId={selectedLocation.id}
                 selectedMenu={selectedMenu}
               />
             ) : null}
