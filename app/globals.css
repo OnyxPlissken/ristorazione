@@ -1119,6 +1119,12 @@ textarea {
   line-height: 1.55;
 }
 
+.menu-location-meta {
+  margin-top: 8px;
+  font-size: 0.92rem;
+  color: var(--muted);
+}
+
 .section-template-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));

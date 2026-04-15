@@ -98,6 +98,9 @@ export default async function MenuPage() {
                   Gestione piu&apos; ordinata di menu, sezioni e piatti, con immagini e categorie
                   classiche del ristorante.
                 </p>
+                <p className="menu-location-meta">
+                  {location.menus.length} menu, {totalSections} sezioni, {totalItems} piatti
+                </p>
               </div>
               {canManageMenus ? (
                 <AdminDialog
@@ -132,21 +135,6 @@ export default async function MenuPage() {
                   </form>
                 </AdminDialog>
               ) : null}
-            </div>
-
-            <div className="zone-summary-grid">
-              <article className="summary-chip">
-                <strong>Menu</strong>
-                <span>{location.menus.length} configurati</span>
-              </article>
-              <article className="summary-chip">
-                <strong>Sezioni</strong>
-                <span>{totalSections} sezioni totali</span>
-              </article>
-              <article className="summary-chip">
-                <strong>Piatti</strong>
-                <span>{totalItems} piatti configurati</span>
-              </article>
             </div>
 
             <div className="entity-list">
