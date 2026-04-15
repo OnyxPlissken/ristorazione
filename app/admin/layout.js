@@ -1,6 +1,4 @@
-import Link from "next/link";
-import AdminSidebarNav from "../../components/admin-sidebar-nav";
-import { logoutAction } from "../../lib/actions/auth-actions";
+import AdminChrome from "../../components/admin-chrome";
 import { requireUser, roleLabel } from "../../lib/auth";
 import { canAccessPage } from "../../lib/permissions";
 import { getAdminReservationLiveSummary } from "../../lib/queries";
@@ -26,41 +24,14 @@ export default async function AdminLayout({ children }) {
     : null;
 
   return (
-    <div className="admin-shell">
-      <aside className="admin-sidebar">
-        <Link className="brand" href="/admin">
-          Coperto
-        </Link>
-        <p className="sidebar-copy">Gestionale ristorazione in italiano.</p>
-        <AdminSidebarNav
-          initialLatestReservation={reservationSummary?.latestReservation || null}
-          initialPendingCount={reservationSummary?.pendingCount || 0}
-          items={items}
-          showPermissions={user.role === "ADMIN"}
-        />
-        <div className="sidebar-user">
-          <strong>{user.name}</strong>
-          <span>{roleLabel(user.role)}</span>
-        </div>
-        <form action={logoutAction}>
-          <button className="button button-secondary button-full" type="submit">
-            Esci
-          </button>
-        </form>
-      </aside>
-
-      <div className="admin-content">
-        <header className="admin-topbar">
-          <div>
-            <div className="eyebrow">Pannello amministrativo</div>
-            <h1>Gestione operativa</h1>
-          </div>
-          <Link className="button button-secondary" href="/prenota">
-            Pagina prenotazione
-          </Link>
-        </header>
-        {children}
-      </div>
-    </div>
+    <AdminChrome
+      initialReservationSummary={reservationSummary}
+      items={items}
+      showPermissions={user.role === "ADMIN"}
+      userName={user.name}
+      userRoleLabel={roleLabel(user.role)}
+    >
+      {children}
+    </AdminChrome>
   );
 }
