@@ -1,5 +1,6 @@
 import { requireUser } from "../../lib/auth";
 import { formatDateTime } from "../../lib/format";
+import { requirePageAccess } from "../../lib/permissions";
 import { getAdminDashboardData } from "../../lib/queries";
 
 export const dynamic = "force-dynamic";
@@ -15,6 +16,7 @@ function StatCard({ label, value }) {
 
 export default async function AdminHomePage() {
   const user = await requireUser();
+  requirePageAccess(user, "dashboard");
   const data = await getAdminDashboardData(user);
 
   return (

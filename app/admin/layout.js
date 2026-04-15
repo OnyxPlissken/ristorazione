@@ -1,29 +1,24 @@
 import Link from "next/link";
 import { logoutAction } from "../../lib/actions/auth-actions";
-import { canManageUsers, requireUser, roleLabel } from "../../lib/auth";
+import { requireUser, roleLabel } from "../../lib/auth";
+import { canAccessPage } from "../../lib/permissions";
 
 export const dynamic = "force-dynamic";
 
 const navigation = [
-  { href: "/admin", label: "Dashboard" },
-  { href: "/admin/sedi", label: "Sedi" },
-  { href: "/admin/tavoli", label: "Tavoli" },
-  { href: "/admin/menu", label: "Menu" },
-  { href: "/admin/orari", label: "Orari" },
-  { href: "/admin/prenotazioni", label: "Prenotazioni" }
+  { href: "/admin", label: "Dashboard", page: "dashboard" },
+  { href: "/admin/sedi", label: "Sedi", page: "locations" },
+  { href: "/admin/tavoli", label: "Tavoli", page: "tables" },
+  { href: "/admin/menu", label: "Menu", page: "menus" },
+  { href: "/admin/orari", label: "Orari", page: "hours" },
+  { href: "/admin/prenotazioni", label: "Prenotazioni", page: "reservations" },
+  { href: "/admin/utenti", label: "Utenti", page: "users" },
+  { href: "/admin/console", label: "Console Admin", page: "console" }
 ];
 
 export default async function AdminLayout({ children }) {
   const user = await requireUser();
-  const items = [...navigation];
-
-  if (canManageUsers(user)) {
-    items.push({ href: "/admin/utenti", label: "Utenti" });
-  }
-
-  if (user.role === "ADMIN") {
-    items.push({ href: "/admin/console", label: "Console Admin" });
-  }
+  const items = navigation.filter((item) => canAccessPage(user, item.page));
 
   return (
     <div className="admin-shell">
@@ -38,6 +33,7 @@ export default async function AdminLayout({ children }) {
               {item.label}
             </Link>
           ))}
+          {user.role === "ADMIN" ? <Link href="/admin/permessi">Permessi</Link> : null}
         </nav>
         <div className="sidebar-user">
           <strong>{user.name}</strong>

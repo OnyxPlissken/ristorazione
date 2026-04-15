@@ -72,6 +72,7 @@ model Location {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   openingHours        OpeningHour[]
+  zones               LocationZone[]
   tables              DiningTable[]
   menus               Menu[]
   reservations        Reservation[]
@@ -79,6 +80,29 @@ model Location {
   technicalSettings   LocationTechnicalSetting?
   tableSessions       TableSession[]
   userAssignments     UserLocation[]
+}
+
+model RolePermission {
+  id                     String    @id @default(cuid())
+  role                   UserRole  @unique
+  canViewDashboard       Boolean   @default(true)
+  canViewLocations       Boolean   @default(false)
+  canManageLocations     Boolean   @default(false)
+  canViewTables          Boolean   @default(false)
+  canManageTables        Boolean   @default(false)
+  canDeleteTables        Boolean   @default(false)
+  canViewMenus           Boolean   @default(false)
+  canManageMenus         Boolean   @default(false)
+  canViewHours           Boolean   @default(false)
+  canManageHours         Boolean   @default(false)
+  canViewReservations    Boolean   @default(false)
+  canManageReservations  Boolean   @default(false)
+  canViewUsers           Boolean   @default(false)
+  canManageUsers         Boolean   @default(false)
+  canViewConsoleAdmin    Boolean   @default(false)
+  canManageConsoleAdmin  Boolean   @default(false)
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
 }
 
 model LocationTechnicalSetting {
@@ -132,9 +156,24 @@ model OpeningHour {
   @@unique([locationId, weekday])
 }
 
+model LocationZone {
+  id         String       @id @default(cuid())
+  locationId String
+  name       String
+  sortOrder  Int          @default(0)
+  active     Boolean      @default(true)
+  createdAt  DateTime     @default(now())
+  updatedAt  DateTime     @updatedAt
+  location   Location     @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  tables     DiningTable[]
+
+  @@unique([locationId, name])
+}
+
 model DiningTable {
   id           String        @id @default(cuid())
   locationId   String
+  zoneId       String?
   code         String
   seats        Int
   zone         String?
@@ -142,6 +181,7 @@ model DiningTable {
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   location     Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  zoneRecord   LocationZone? @relation(fields: [zoneId], references: [id], onDelete: SetNull)
   reservations Reservation[]
   sessions     TableSession[]
 

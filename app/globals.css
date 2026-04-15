@@ -199,6 +199,12 @@ button {
   color: #fff8f3;
 }
 
+.button-danger {
+  background: rgba(157, 68, 40, 0.12);
+  color: #7d2d17;
+  border: 1px solid rgba(157, 68, 40, 0.18);
+}
+
 .button-secondary {
   background: rgba(255, 255, 255, 0.1);
   color: var(--text-inverse);
@@ -715,6 +721,19 @@ button {
   gap: 18px;
 }
 
+.form-fieldset {
+  min-inline-size: 0;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  display: grid;
+  gap: 18px;
+}
+
+.form-fieldset:disabled {
+  opacity: 0.72;
+}
+
 .form-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -798,7 +817,9 @@ textarea {
 .reservation-head,
 .entity-footer,
 .info-list div,
-.auth-links {
+.auth-links,
+.table-admin-card-head,
+.table-card-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -841,6 +862,96 @@ textarea {
   gap: 6px;
   text-align: right;
   color: var(--muted);
+}
+
+.helper-copy {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.location-switcher,
+.zone-summary-grid,
+.table-card-grid,
+.table-admin-layout {
+  display: grid;
+  gap: 16px;
+}
+
+.location-switcher {
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.location-pill,
+.summary-chip,
+.table-admin-card {
+  border-radius: 18px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(255, 255, 255, 0.48);
+}
+
+.location-pill {
+  display: grid;
+  gap: 6px;
+  padding: 16px 18px;
+  color: var(--muted);
+}
+
+.location-pill strong {
+  color: var(--text);
+}
+
+.location-pill.active {
+  background: rgba(19, 35, 30, 0.9);
+  color: rgba(255, 248, 239, 0.84);
+}
+
+.location-pill.active strong {
+  color: var(--text-inverse);
+}
+
+.zone-summary-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+.summary-chip {
+  display: grid;
+  gap: 6px;
+  padding: 18px;
+}
+
+.summary-chip span,
+.summary-chip small {
+  color: var(--muted);
+}
+
+.summary-chip.empty {
+  border-style: dashed;
+}
+
+.table-admin-layout {
+  grid-template-columns: 1.05fr 0.95fr 0.95fr;
+  align-items: start;
+}
+
+.table-card-grid {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+}
+
+.table-admin-card {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+}
+
+.table-admin-card-head p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.table-card-actions {
+  padding-top: 8px;
+  border-top: 1px solid rgba(19, 35, 30, 0.08);
 }
 
 .note-box {
@@ -933,7 +1044,8 @@ textarea {
   .booking-grid,
   .feature-grid,
   .form-grid,
-  .admin-shell {
+  .admin-shell,
+  .table-admin-layout {
     grid-template-columns: 1fr;
   }
 
@@ -952,13 +1064,18 @@ textarea {
   .info-list div,
   .auth-links,
   .panel-header,
-  .admin-topbar {
+  .admin-topbar,
+  .table-admin-card-head,
+  .table-card-actions {
     flex-direction: column;
     align-items: flex-start;
   }
 
   .feature-grid,
   .form-grid,
+  .location-switcher,
+  .zone-summary-grid,
+  .table-card-grid,
   .stats-grid {
     grid-template-columns: 1fr;
   }

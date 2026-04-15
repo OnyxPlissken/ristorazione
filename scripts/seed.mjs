@@ -2,6 +2,84 @@ import { PrismaClient } from "@prisma/client";
 import { randomBytes, scryptSync } from "node:crypto";
 
 const prisma = new PrismaClient();
+const defaultRolePermissions = {
+  ADMIN: {
+    canViewDashboard: true,
+    canViewLocations: true,
+    canManageLocations: true,
+    canViewTables: true,
+    canManageTables: true,
+    canDeleteTables: true,
+    canViewMenus: true,
+    canManageMenus: true,
+    canViewHours: true,
+    canManageHours: true,
+    canViewReservations: true,
+    canManageReservations: true,
+    canViewUsers: true,
+    canManageUsers: true,
+    canViewConsoleAdmin: true,
+    canManageConsoleAdmin: true
+  },
+  PROPRIETARIO: {
+    canViewDashboard: true,
+    canViewLocations: true,
+    canManageLocations: true,
+    canViewTables: true,
+    canManageTables: true,
+    canDeleteTables: true,
+    canViewMenus: true,
+    canManageMenus: true,
+    canViewHours: true,
+    canManageHours: true,
+    canViewReservations: true,
+    canManageReservations: true,
+    canViewUsers: true,
+    canManageUsers: true,
+    canViewConsoleAdmin: false,
+    canManageConsoleAdmin: false
+  },
+  STORE_MANAGER: {
+    canViewDashboard: true,
+    canViewLocations: false,
+    canManageLocations: false,
+    canViewTables: true,
+    canManageTables: true,
+    canDeleteTables: false,
+    canViewMenus: true,
+    canManageMenus: true,
+    canViewHours: true,
+    canManageHours: true,
+    canViewReservations: true,
+    canManageReservations: true,
+    canViewUsers: false,
+    canManageUsers: false,
+    canViewConsoleAdmin: false,
+    canManageConsoleAdmin: false
+  },
+  STAFF: {
+    canViewDashboard: true,
+    canViewLocations: false,
+    canManageLocations: false,
+    canViewTables: false,
+    canManageTables: false,
+    canDeleteTables: false,
+    canViewMenus: false,
+    canManageMenus: false,
+    canViewHours: false,
+    canManageHours: false,
+    canViewReservations: true,
+    canManageReservations: false,
+    canViewUsers: false,
+    canManageUsers: false,
+    canViewConsoleAdmin: false,
+    canManageConsoleAdmin: false
+  }
+};
+const defaultZones = [
+  { name: "Sala interna", sortOrder: 1, active: true },
+  { name: "Dehors", sortOrder: 2, active: true }
+];
 
 function hashPassword(password) {
   const salt = randomBytes(16).toString("hex");
@@ -168,6 +246,57 @@ async function main() {
       reservationEmails: "booking@sede-centrale.it"
     }
   });
+
+  for (const [role, permission] of Object.entries(defaultRolePermissions)) {
+    await prisma.rolePermission.upsert({
+      where: {
+        role
+      },
+      update: permission,
+      create: {
+        role,
+        ...permission
+      }
+    });
+  }
+
+  for (const zone of defaultZones) {
+    await prisma.locationZone.upsert({
+      where: {
+        locationId_name: {
+          locationId: location.id,
+          name: zone.name
+        }
+      },
+      update: {
+        sortOrder: zone.sortOrder,
+        active: zone.active
+      },
+      create: {
+        locationId: location.id,
+        ...zone
+      }
+    });
+  }
+
+  const zones = await prisma.locationZone.findMany({
+    where: {
+      locationId: location.id
+    }
+  });
+
+  for (const zone of zones) {
+    await prisma.diningTable.updateMany({
+      where: {
+        locationId: location.id,
+        zone: zone.name,
+        zoneId: null
+      },
+      data: {
+        zoneId: zone.id
+      }
+    });
+  }
 
   console.log(`Admin email: ${email}`);
 
