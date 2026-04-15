@@ -1406,9 +1406,6 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  position: sticky;
-  top: 16px;
-  z-index: 20;
   padding: 16px 20px;
   border-radius: 28px;
   background: rgba(255, 248, 239, 0.78);
