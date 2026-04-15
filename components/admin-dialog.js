@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useId, useState } from "react";
+import { createPortal } from "react-dom";
 
 export function AdminDialog({
   buttonLabel,
@@ -10,7 +11,12 @@ export function AdminDialog({
   children
 }) {
   const [open, setOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const titleId = useId();
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (!open) {
@@ -50,42 +56,47 @@ export function AdminDialog({
     }, 0);
   }
 
+  const dialogContent =
+    mounted && open
+      ? createPortal(
+          <div className="modal-backdrop" onClick={() => setOpen(false)} role="presentation">
+            <div
+              aria-labelledby={titleId}
+              aria-modal="true"
+              className="modal-shell"
+              onClick={(event) => event.stopPropagation()}
+              onSubmit={handleSubmit}
+              role="dialog"
+            >
+              <div className="modal-header">
+                <div>
+                  <h2 id={titleId}>{title}</h2>
+                  {description ? <p>{description}</p> : null}
+                </div>
+
+                <button
+                  aria-label="Chiudi finestra"
+                  className="modal-close"
+                  onClick={() => setOpen(false)}
+                  type="button"
+                >
+                  Chiudi
+                </button>
+              </div>
+
+              <div className="modal-body">{children}</div>
+            </div>
+          </div>,
+          document.body
+        )
+      : null;
+
   return (
     <>
       <button className={buttonClassName} onClick={() => setOpen(true)} type="button">
         {buttonLabel}
       </button>
-
-      {open ? (
-        <div className="modal-backdrop" onClick={() => setOpen(false)} role="presentation">
-          <div
-            aria-labelledby={titleId}
-            aria-modal="true"
-            className="modal-shell"
-            onClick={(event) => event.stopPropagation()}
-            onSubmit={handleSubmit}
-            role="dialog"
-          >
-            <div className="modal-header">
-              <div>
-                <h2 id={titleId}>{title}</h2>
-                {description ? <p>{description}</p> : null}
-              </div>
-
-              <button
-                aria-label="Chiudi finestra"
-                className="modal-close"
-                onClick={() => setOpen(false)}
-                type="button"
-              >
-                Chiudi
-              </button>
-            </div>
-
-            <div className="modal-body">{children}</div>
-          </div>
-        </div>
-      ) : null}
+      {dialogContent}
     </>
   );
 }
