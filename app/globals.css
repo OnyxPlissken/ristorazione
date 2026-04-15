@@ -1278,6 +1278,7 @@ textarea {
 
 .notification-shell {
   position: relative;
+  display: inline-flex;
 }
 
 .notification-button.active {
@@ -1303,18 +1304,25 @@ textarea {
   font-weight: 700;
 }
 
+.notification-badge.zero {
+  background: rgba(19, 35, 30, 0.16);
+  color: var(--text);
+}
+
 .notification-panel {
   position: absolute;
   top: calc(100% + 12px);
   right: 0;
-  z-index: 35;
-  width: min(400px, calc(100vw - 32px));
+  z-index: 60;
+  width: min(430px, calc(100vw - 48px));
+  max-height: min(520px, calc(100vh - 120px));
   padding: 18px;
   border-radius: 22px;
   background: rgba(255, 248, 239, 0.98);
   border: 1px solid rgba(255, 255, 255, 0.56);
   box-shadow: var(--shadow);
   backdrop-filter: blur(16px);
+  overflow: hidden;
 }
 
 .notification-panel-header,
@@ -1339,8 +1347,9 @@ textarea {
 .notification-list {
   display: grid;
   gap: 10px;
-  max-height: 360px;
+  max-height: min(400px, calc(100vh - 220px));
   overflow-y: auto;
+  padding-right: 4px;
 }
 
 .notification-item,
@@ -1353,9 +1362,13 @@ textarea {
   border: 1px solid rgba(19, 35, 30, 0.08);
 }
 
-.notification-item.unread {
+.notification-item.pending {
   background: rgba(232, 155, 102, 0.16);
   border-color: rgba(157, 68, 40, 0.22);
+}
+
+.notification-item:hover {
+  transform: translateY(-1px);
 }
 
 .notification-item p,
@@ -1508,8 +1521,12 @@ textarea {
   }
 
   .notification-panel {
-    width: min(100vw - 18px, 400px);
-    right: -8px;
+    position: fixed;
+    top: 84px;
+    right: 12px;
+    left: 12px;
+    width: auto;
+    max-height: calc(100vh - 108px);
   }
 
   .notification-panel-header,

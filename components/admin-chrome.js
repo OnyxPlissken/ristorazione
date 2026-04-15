@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useEffect, useEffectEvent, useMemo, useRef, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { logoutAction } from "../lib/actions/auth-actions";
 import AdminSidebarNav from "./admin-sidebar-nav";
 
@@ -66,12 +66,10 @@ export default function AdminChrome({
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(initialReservationSummary?.pendingCount || 0);
-  const [recentReservations, setRecentReservations] = useState(
-    initialReservationSummary?.recentReservations || []
-  );
-  const [unseenIds, setUnseenIds] = useState([]);
-  const knownIdsRef = useRef(
-    new Set((initialReservationSummary?.recentReservations || []).map((item) => item.id))
+  const [pendingReservations, setPendingReservations] = useState(
+    initialReservationSummary?.pendingReservations ||
+      initialReservationSummary?.recentReservations ||
+      []
   );
   const bellShellRef = useRef(null);
   const canWatchReservations = items.some((item) => item.page === "reservations");
@@ -91,23 +89,7 @@ export default function AdminChrome({
     }
 
     setPendingCount(summary.pendingCount || 0);
-
-    const nextReservations = summary.recentReservations || [];
-    const newIds = nextReservations
-      .filter((reservation) => !knownIdsRef.current.has(reservation.id))
-      .map((reservation) => reservation.id);
-
-    if (newIds.length > 0 && !bellOpen) {
-      setUnseenIds((current) => [...new Set([...newIds, ...current])].slice(0, 12));
-    }
-
-    const nextKnownIds = new Set(knownIdsRef.current);
-    nextReservations.forEach((reservation) => {
-      nextKnownIds.add(reservation.id);
-    });
-    knownIdsRef.current = nextKnownIds;
-
-    setRecentReservations(nextReservations);
+    setPendingReservations(summary.pendingReservations || summary.recentReservations || []);
   });
 
   useEffect(() => {
@@ -161,14 +143,6 @@ export default function AdminChrome({
   }, [canWatchReservations, syncSummary]);
 
   useEffect(() => {
-    if (!bellOpen) {
-      return;
-    }
-
-    setUnseenIds([]);
-  }, [bellOpen]);
-
-  useEffect(() => {
     function handleKeyDown(event) {
       if (event.key === "Escape") {
         setBellOpen(false);
@@ -193,15 +167,6 @@ export default function AdminChrome({
       document.removeEventListener("keydown", handleKeyDown);
     };
   }, [bellOpen]);
-
-  const notificationItems = useMemo(
-    () =>
-      recentReservations.map((reservation) => ({
-        ...reservation,
-        isUnseen: unseenIds.includes(reservation.id)
-      })),
-    [recentReservations, unseenIds]
-  );
 
   return (
     <div className={sidebarHidden ? "admin-shell sidebar-hidden" : "admin-shell"}>
@@ -260,7 +225,7 @@ export default function AdminChrome({
               <div className="notification-shell" ref={bellShellRef}>
                 <button
                   aria-expanded={bellOpen ? "true" : "false"}
-                  aria-label="Apri notifiche prenotazioni"
+                  aria-label="Apri prenotazioni da gestire"
                   className={
                     bellOpen
                       ? "icon-button notification-button active"
@@ -270,16 +235,18 @@ export default function AdminChrome({
                   type="button"
                 >
                   <BellIcon />
-                  {unseenIds.length > 0 ? (
-                    <span className="notification-badge">{unseenIds.length}</span>
-                  ) : null}
+                  <span
+                    className={pendingCount > 0 ? "notification-badge" : "notification-badge zero"}
+                  >
+                    {pendingCount}
+                  </span>
                 </button>
 
                 {bellOpen ? (
                   <div className="notification-panel" role="dialog">
                     <div className="notification-panel-header">
                       <div>
-                        <strong>Notifiche prenotazioni</strong>
+                        <strong>Prenotazioni da gestire</strong>
                         <p>{pendingCount} prenotazioni in attesa di gestione</p>
                       </div>
                       <Link href="/admin/prenotazioni" onClick={() => setBellOpen(false)}>
@@ -288,22 +255,16 @@ export default function AdminChrome({
                     </div>
 
                     <div className="notification-list">
-                      {notificationItems.map((reservation) => (
+                      {pendingReservations.map((reservation) => (
                         <Link
-                          className={
-                            reservation.isUnseen
-                              ? "notification-item unread"
-                              : "notification-item"
-                          }
+                          className="notification-item pending"
                           href="/admin/prenotazioni"
                           key={reservation.id}
                           onClick={() => setBellOpen(false)}
                         >
                           <div className="notification-item-head">
                             <strong>{reservation.guestName}</strong>
-                            {reservation.isUnseen ? (
-                              <span className="notification-pill">Nuova</span>
-                            ) : null}
+                            <span className="notification-pill">In attesa</span>
                           </div>
                           <p>
                             {reservation.locationName} - {reservation.guests} ospiti
@@ -315,10 +276,10 @@ export default function AdminChrome({
                         </Link>
                       ))}
 
-                      {notificationItems.length === 0 ? (
+                      {pendingReservations.length === 0 ? (
                         <div className="notification-empty">
-                          <strong>Nessuna notifica recente</strong>
-                          <p>Le nuove prenotazioni appariranno qui in tempo reale.</p>
+                          <strong>Nessuna prenotazione da gestire</strong>
+                          <p>Quando arriva una nuova richiesta in attesa la vedrai qui subito.</p>
                         </div>
                       ) : null}
                     </div>
