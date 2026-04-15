@@ -1,112 +1,53 @@
 import Link from "next/link";
-import { demoLocations, demoSignals, demoModules } from "../lib/demo-data";
+
+const funzionalita = [
+  "Gestione sedi e multisede con pannello centralizzato",
+  "Ruoli utente: Admin, Proprietario, Store Manager e Staff",
+  "Configurazione tavoli, capienza, zone e stato operativo",
+  "Menu, sezioni, piatti, prezzi e disponibilita'",
+  "Orari di apertura e impostazioni pagina prenotazione",
+  "Prenotazioni pubbliche e gestione interna del servizio"
+];
 
 export default function HomePage() {
-  const heroLocation = demoLocations[0];
-
   return (
-    <div className="page-stack">
-      <section className="hero-panel">
-        <div className="eyebrow">Unified restaurant operations</div>
-        <div className="hero-grid">
-          <div className="hero-copy">
-            <h1>
-              Reservations, tables, kitchen, QR ordering, payments, and delivery
-              in one operating system.
-            </h1>
-            <p className="lead">
-              Coperto is a Vercel-ready prototype for modern restaurants with
-              multi-location control, live table sessions, kitchen visibility,
-              and guest retention workflows.
-            </p>
-            <div className="cta-row">
-              <Link className="button button-primary" href="/ops">
-                Open Ops Hub
-              </Link>
-              <Link className="button button-secondary" href="/table/milano-12">
-                Open QR Table
-              </Link>
-            </div>
-          </div>
-          <div className="hero-stats">
-            <div className="glass-card">
-              <span className="metric-label">Active location</span>
-              <strong>{heroLocation.name}</strong>
-              <p>{heroLocation.city}</p>
-              <div className="metric-strip">
-                <div>
-                  <span className="metric-value">
-                    {heroLocation.metrics.covers}
-                  </span>
-                  <span className="metric-caption">covers tonight</span>
-                </div>
-                <div>
-                  <span className="metric-value">
-                    {heroLocation.metrics.qrConversion}%
-                  </span>
-                  <span className="metric-caption">QR conversion</span>
-                </div>
-                <div>
-                  <span className="metric-value">
-                    {heroLocation.metrics.avgTicket} EUR
-                  </span>
-                  <span className="metric-caption">avg ticket</span>
-                </div>
-              </div>
-            </div>
-            <div className="signal-list">
-              {demoSignals.map((signal) => (
-                <article className="signal-card" key={signal.title}>
-                  <span className="signal-kicker">{signal.kicker}</span>
-                  <h3>{signal.title}</h3>
-                  <p>{signal.body}</p>
-                </article>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
+    <div className="marketing-shell">
+      <header className="public-header">
+        <Link className="brand" href="/">
+          Coperto
+        </Link>
+        <nav className="public-nav">
+          <Link href="/prenota">Prenota</Link>
+          <Link href="/login">Accedi</Link>
+        </nav>
+      </header>
 
-      <section className="section-grid">
-        {demoModules.map((module) => (
-          <article className="module-card" key={module.title}>
-            <div className="module-chip">{module.kicker}</div>
-            <h2>{module.title}</h2>
-            <p>{module.body}</p>
-            <ul className="feature-list">
-              {module.points.map((point) => (
-                <li key={point}>{point}</li>
-              ))}
-            </ul>
-          </article>
-        ))}
-      </section>
-
-      <section className="split-panel">
-        <div className="split-copy">
-          <div className="eyebrow">Built for real floor operations</div>
-          <h2>Ship the first usable version before the platform becomes a maze.</h2>
-          <p>
-            The first release should already handle table sessions, menu browsing,
-            live cart, kitchen queue, and pay-at-table. Delivery adapters and CRM
-            automation can layer on top once the operational core is stable.
+      <main className="marketing-main">
+        <section className="hero-panel">
+          <div className="eyebrow">Gestionale per ristorazione</div>
+          <h1>Tutto il ristorante in un unico pannello, rigorosamente in italiano.</h1>
+          <p className="lead">
+            Coperto nasce per gestire sedi, tavoli, menu, orari, utenti e
+            prenotazioni con un backoffice unico e una pagina pubblica di booking.
           </p>
-        </div>
-        <div className="timeline-card" id="roadmap">
-          <div className="timeline-step">
-            <strong>Phase 1</strong>
-            <span>Menu, table sessions, QR flow, kitchen queue</span>
+          <div className="cta-row">
+            <Link className="button button-primary" href="/login">
+              Apri il pannello
+            </Link>
+            <Link className="button button-secondary" href="/prenota">
+              Vai alla prenotazione
+            </Link>
           </div>
-          <div className="timeline-step">
-            <strong>Phase 2</strong>
-            <span>Reservations, floor map, table assignment engine</span>
-          </div>
-          <div className="timeline-step">
-            <strong>Phase 3</strong>
-            <span>Delivery adapters, omnichannel orders, analytics</span>
-          </div>
-        </div>
-      </section>
+        </section>
+
+        <section className="feature-grid">
+          {funzionalita.map((item) => (
+            <article className="feature-card" key={item}>
+              <h2>{item}</h2>
+            </article>
+          ))}
+        </section>
+      </main>
     </div>
   );
 }

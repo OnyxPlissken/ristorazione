@@ -1,0 +1,175 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DATABASE_URL_UNPOOLED")
+}
+
+enum UserRole {
+  ADMIN
+  PROPRIETARIO
+  STORE_MANAGER
+  STAFF
+}
+
+enum ReservationStatus {
+  IN_ATTESA
+  CONFERMATA
+  IN_CORSO
+  COMPLETATA
+  CANCELLATA
+  NO_SHOW
+}
+
+enum ReservationSource {
+  PUBBLICA
+  ADMIN
+  TELEFONO
+  WALK_IN
+}
+
+model User {
+  id             String         @id @default(cuid())
+  name           String
+  email          String         @unique
+  passwordHash   String
+  role           UserRole
+  active         Boolean        @default(true)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  sessions       Session[]
+  locationAccess UserLocation[]
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  tokenHash String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Location {
+  id                  String               @id @default(cuid())
+  name                String
+  slug                String               @unique
+  address             String
+  city                String
+  phone               String?
+  email               String?
+  reservationEnabled  Boolean              @default(true)
+  createdAt           DateTime             @default(now())
+  updatedAt           DateTime             @updatedAt
+  openingHours        OpeningHour[]
+  tables              DiningTable[]
+  menus               Menu[]
+  reservations        Reservation[]
+  settings            ReservationSetting?
+  userAssignments     UserLocation[]
+}
+
+model UserLocation {
+  id         String   @id @default(cuid())
+  userId     String
+  locationId String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, locationId])
+}
+
+model OpeningHour {
+  id         String   @id @default(cuid())
+  locationId String
+  weekday    Int
+  opensAt    String
+  closesAt   String
+  isClosed   Boolean  @default(false)
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, weekday])
+}
+
+model DiningTable {
+  id         String        @id @default(cuid())
+  locationId String
+  code       String
+  seats      Int
+  zone       String?
+  active     Boolean       @default(true)
+  createdAt  DateTime      @default(now())
+  updatedAt  DateTime      @updatedAt
+  location   Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  reservations Reservation[]
+
+  @@unique([locationId, code])
+}
+
+model Menu {
+  id          String        @id @default(cuid())
+  locationId  String
+  name        String
+  description String?
+  isActive    Boolean       @default(true)
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  location    Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  sections    MenuSection[]
+}
+
+model MenuSection {
+  id        String     @id @default(cuid())
+  menuId     String
+  name      String
+  sortOrder Int        @default(0)
+  menu       Menu      @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  items      MenuItem[]
+}
+
+model MenuItem {
+  id          String     @id @default(cuid())
+  sectionId   String
+  name        String
+  description String?
+  price       Decimal    @db.Decimal(10, 2)
+  allergens   String?
+  available   Boolean    @default(true)
+  sortOrder   Int        @default(0)
+  section     MenuSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+}
+
+model ReservationSetting {
+  id                 String   @id @default(cuid())
+  locationId         String   @unique
+  pageTitle          String?
+  welcomeMessage     String?
+  durationMinutes    Int      @default(120)
+  leadTimeMinutes    Int      @default(60)
+  minGuests          Int      @default(1)
+  maxGuests          Int      @default(8)
+  requirePhone       Boolean  @default(true)
+  requireEmail       Boolean  @default(true)
+  location           Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+}
+
+model Reservation {
+  id          String            @id @default(cuid())
+  locationId  String
+  tableId     String?
+  guestName   String
+  guestEmail  String?
+  guestPhone  String?
+  guests      Int
+  dateTime    DateTime
+  notes       String?
+  status      ReservationStatus @default(IN_ATTESA)
+  source      ReservationSource @default(PUBBLICA)
+  createdAt   DateTime          @default(now())
+  updatedAt   DateTime          @updatedAt
+  location    Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  table       DiningTable?      @relation(fields: [tableId], references: [id], onDelete: SetNull)
+}

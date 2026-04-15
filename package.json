@@ -3,12 +3,17 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
+    "postinstall": "prisma generate",
     "dev": "next dev",
     "build": "next build",
-    "start": "next start"
+    "start": "next start",
+    "db:push": "prisma db push",
+    "db:seed": "node scripts/seed.mjs"
   },
   "dependencies": {
+    "@prisma/client": "^6.17.1",
     "next": "16.2.3",
+    "prisma": "^6.17.1",
     "react": "19.2.5",
     "react-dom": "19.2.5"
   }

@@ -1,43 +1,45 @@
 # Coperto
 
-Coperto e' un primo prototipo Next.js per una piattaforma di ristorazione che unifica:
+Coperto e' un gestionale per ristorazione costruito con Next.js e Postgres, pensato per un uso reale in italiano.
 
-- prenotazioni e gestione tavoli
-- operativita' sala e cucina
-- multisede
-- ordini delivery e takeaway
-- QR al tavolo con carrello condiviso e split bill
-- analytics e marketing
+## Cosa include
 
-## Demo inclusa
-
-La base attuale include tre superfici funzionanti:
-
-- `/` homepage prodotto
-- `/ops` dashboard operativa multisede
-- `/table/milano-12` demo QR ordering con carrello per posto e pagamento simulato
+- login amministrativo con sessioni server-side
+- ruoli `Admin`, `Proprietario`, `Store Manager`, `Staff`
+- gestione sedi e multisede
+- gestione tavoli e generazione rapida numerazione
+- gestione menu, sezioni e piatti
+- orari di apertura e impostazioni prenotazione
+- pagina pubblica `/prenota`
+- pannello amministrativo `/admin`
 
 ## Stack
 
 - Next.js 16
 - React 19
-- App Router
-- zero database per questa prima iterazione
+- Prisma
+- Neon Postgres su Vercel
 
-## Avvio locale
+## Script
 
 ```bash
 npm install
+npm run db:push
+npm run db:seed
 npm run dev
 ```
 
-## Note ambiente locale
+## Variabili ambiente
 
-Su questo workspace Windows in OneDrive la build locale ha trovato blocchi `EPERM` in scrittura dentro `.next`.
-Il progetto e' stato comunque installato correttamente e il problema osservato e' ambientale, non un errore applicativo rilevato nel codice.
+Consulta [.env.example](.env.example).
 
-## Documenti
+Le variabili principali sono:
 
-- [Strategia riuso OSS](docs/OSS_REUSE_STRATEGY.md)
-- [Architettura proposta](docs/ARCHITECTURE.md)
-- [Roadmap MVP](docs/MVP_ROADMAP.md)
+- `DATABASE_URL`
+- `DATABASE_URL_UNPOOLED`
+- `SESSION_SECRET`
+
+## Note locali
+
+In questo workspace Windows sincronizzato con OneDrive la build locale puo' fallire con errori `EPERM` su cartelle di output o cache.
+Le build e i deploy Vercel risultano invece funzionanti.
