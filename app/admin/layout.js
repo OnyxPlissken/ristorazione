@@ -1,7 +1,9 @@
 import Link from "next/link";
+import AdminSidebarNav from "../../components/admin-sidebar-nav";
 import { logoutAction } from "../../lib/actions/auth-actions";
 import { requireUser, roleLabel } from "../../lib/auth";
 import { canAccessPage } from "../../lib/permissions";
+import { getAdminReservationLiveSummary } from "../../lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -19,6 +21,9 @@ const navigation = [
 export default async function AdminLayout({ children }) {
   const user = await requireUser();
   const items = navigation.filter((item) => canAccessPage(user, item.page));
+  const reservationSummary = canAccessPage(user, "reservations")
+    ? await getAdminReservationLiveSummary(user)
+    : null;
 
   return (
     <div className="admin-shell">
@@ -27,14 +32,12 @@ export default async function AdminLayout({ children }) {
           Coperto
         </Link>
         <p className="sidebar-copy">Gestionale ristorazione in italiano.</p>
-        <nav className="sidebar-nav">
-          {items.map((item) => (
-            <Link href={item.href} key={item.href}>
-              {item.label}
-            </Link>
-          ))}
-          {user.role === "ADMIN" ? <Link href="/admin/permessi">Permessi</Link> : null}
-        </nav>
+        <AdminSidebarNav
+          initialLatestReservation={reservationSummary?.latestReservation || null}
+          initialPendingCount={reservationSummary?.pendingCount || 0}
+          items={items}
+          showPermissions={user.role === "ADMIN"}
+        />
         <div className="sidebar-user">
           <strong>{user.name}</strong>
           <span>{roleLabel(user.role)}</span>
