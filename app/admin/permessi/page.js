@@ -1,40 +1,47 @@
-import { saveRolePermissionAction } from "../../../lib/actions/admin-actions";
+import { saveRolePermissionMatrixAction } from "../../../lib/actions/admin-actions";
 import { requireRoles } from "../../../lib/auth";
-import { ADMIN_PAGE_LABELS, ROLE_LABELS } from "../../../lib/constants";
+import { ADMIN_PAGE_LABELS, DEFAULT_ROLE_PERMISSIONS, ROLE_LABELS } from "../../../lib/constants";
 import { getRolePermissions } from "../../../lib/permissions";
 
 export const dynamic = "force-dynamic";
 
 const permissionSections = [
   {
-    title: "Accesso pagine",
-    description: "Definisce quali sezioni del pannello sono visibili per ogni ruolo.",
+    title: "Visibilità pagine",
+    description: "Quali voci del pannello ogni ruolo può vedere.",
     fields: [
-      { key: "canViewDashboard", label: `Vedere ${ADMIN_PAGE_LABELS.dashboard}` },
-      { key: "canViewLocations", label: `Vedere ${ADMIN_PAGE_LABELS.locations}` },
-      { key: "canViewTables", label: `Vedere ${ADMIN_PAGE_LABELS.tables}` },
-      { key: "canViewMenus", label: `Vedere ${ADMIN_PAGE_LABELS.menus}` },
-      { key: "canViewHours", label: `Vedere ${ADMIN_PAGE_LABELS.hours}` },
-      { key: "canViewReservations", label: `Vedere ${ADMIN_PAGE_LABELS.reservations}` },
-      { key: "canViewUsers", label: `Vedere ${ADMIN_PAGE_LABELS.users}` },
-      { key: "canViewConsoleAdmin", label: `Vedere ${ADMIN_PAGE_LABELS.console}` }
+      { key: "canViewDashboard", label: ADMIN_PAGE_LABELS.dashboard },
+      { key: "canViewLocations", label: ADMIN_PAGE_LABELS.locations },
+      { key: "canViewTables", label: ADMIN_PAGE_LABELS.tables },
+      { key: "canViewMenus", label: ADMIN_PAGE_LABELS.menus },
+      { key: "canViewHours", label: ADMIN_PAGE_LABELS.hours },
+      { key: "canViewReservations", label: ADMIN_PAGE_LABELS.reservations },
+      { key: "canViewUsers", label: ADMIN_PAGE_LABELS.users },
+      { key: "canViewConsoleAdmin", label: ADMIN_PAGE_LABELS.console }
     ]
   },
   {
-    title: "Azioni consentite",
-    description: "Definisce quali operazioni sono autorizzate per il ruolo.",
+    title: "Operazioni consentite",
+    description: "Quali azioni operative e gestionali ogni ruolo può eseguire.",
     fields: [
-      { key: "canManageLocations", label: "Creare e modificare sedi" },
-      { key: "canManageTables", label: "Creare e modificare tavoli e zone" },
+      { key: "canManageLocations", label: "Gestire sedi" },
+      { key: "canManageTables", label: "Gestire tavoli e zone" },
       { key: "canDeleteTables", label: "Eliminare tavoli" },
       { key: "canManageMenus", label: "Gestire menu e piatti" },
-      { key: "canManageHours", label: "Gestire orari e regole prenotazioni" },
+      { key: "canManageHours", label: "Gestire orari e slot" },
       { key: "canManageReservations", label: "Gestire prenotazioni" },
-      { key: "canManageUsers", label: "Gestire utenti e sedi assegnate" },
+      { key: "canManageUsers", label: "Gestire utenti" },
       { key: "canManageConsoleAdmin", label: "Gestire console tecnica" }
     ]
   }
 ];
+
+function countEnabled(permission) {
+  return Object.keys(DEFAULT_ROLE_PERMISSIONS[permission.role]).reduce(
+    (total, key) => total + (permission[key] ? 1 : 0),
+    0
+  );
+}
 
 export default async function PermessiPage() {
   await requireRoles(["ADMIN"]);
@@ -47,57 +54,74 @@ export default async function PermessiPage() {
           <div>
             <h2>Permessi per ruolo</h2>
             <p>
-              Pagina riservata agli Admin. Qui decidi cosa puo&apos; vedere o fare ogni gruppo
-              utente in tutto il pannello.
+              Vista unica per Admin. Modifichi tutti i ruoli nello stesso schermo, senza blocchi
+              ripetuti.
             </p>
           </div>
         </div>
+
+        <div className="permission-role-strip">
+          {permissions.map((permission) => (
+            <div className="summary-chip" key={permission.role}>
+              <strong>{ROLE_LABELS[permission.role] || permission.role}</strong>
+              <span>{countEnabled(permission)} permessi attivi</span>
+            </div>
+          ))}
+        </div>
       </section>
 
-      {permissions.map((permission) => (
-        <section className="panel-card" key={permission.role}>
-          <div className="panel-header">
-            <div>
-              <h2>{ROLE_LABELS[permission.role] || permission.role}</h2>
-              <p>Le modifiche si applicano a tutti gli utenti che hanno questo ruolo.</p>
+      <form action={saveRolePermissionMatrixAction} className="entity-form">
+        {permissionSections.map((section) => (
+          <section className="panel-card" key={section.title}>
+            <div className="panel-header">
+              <div>
+                <h2>{section.title}</h2>
+                <p>{section.description}</p>
+              </div>
             </div>
-          </div>
 
-          <form action={saveRolePermissionAction} className="entity-form">
-            <input name="role" type="hidden" value={permission.role} />
+            <div className="permission-matrix-shell">
+              <div className="permission-matrix">
+                <div className="permission-matrix-head permission-matrix-head-label">
+                  Permesso
+                </div>
 
-            <div className="section-stack">
-              {permissionSections.map((section) => (
-                <div className="section-card" key={`${permission.role}-${section.title}`}>
-                  <div className="panel-header">
-                    <div>
-                      <h2>{section.title}</h2>
-                      <p>{section.description}</p>
-                    </div>
+                {permissions.map((permission) => (
+                  <div className="permission-matrix-head" key={`${section.title}-${permission.role}`}>
+                    <strong>{ROLE_LABELS[permission.role] || permission.role}</strong>
                   </div>
+                ))}
 
-                  <div className="checkbox-grid">
-                    {section.fields.map((field) => (
-                      <label className="checkbox-item" key={`${permission.role}-${field.key}`}>
+                {section.fields.map((field) => (
+                  <div className="permission-matrix-row" key={`${section.title}-${field.key}`}>
+                    <div className="permission-matrix-label">{field.label}</div>
+
+                    {permissions.map((permission) => (
+                      <label
+                        className="permission-matrix-cell"
+                        key={`${permission.role}-${field.key}`}
+                      >
                         <input
                           defaultChecked={Boolean(permission[field.key])}
-                          name={field.key}
+                          name={`${permission.role}__${field.key}`}
                           type="checkbox"
                         />
-                        <span>{field.label}</span>
+                        <span className="sr-only">
+                          {field.label} per {ROLE_LABELS[permission.role] || permission.role}
+                        </span>
                       </label>
                     ))}
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
+          </section>
+        ))}
 
-            <button className="button button-primary" type="submit">
-              Salva permessi {ROLE_LABELS[permission.role] || permission.role}
-            </button>
-          </form>
-        </section>
-      ))}
+        <button className="button button-primary" type="submit">
+          Salva matrice permessi
+        </button>
+      </form>
     </div>
   );
 }

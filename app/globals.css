@@ -992,6 +992,116 @@ textarea {
   border-style: dashed;
 }
 
+.permission-role-strip {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+}
+
+.console-group {
+  display: grid;
+  gap: 14px;
+}
+
+.console-group-header h3 {
+  margin: 0;
+  font-family: var(--serif);
+  font-size: 1.28rem;
+}
+
+.console-group-header p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+}
+
+.console-grid {
+  display: grid;
+  gap: 16px;
+  align-items: start;
+}
+
+.console-grid-main {
+  grid-template-columns: minmax(0, 1.08fr) minmax(0, 0.92fr);
+}
+
+.console-grid-triple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.console-grid-compact {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.console-topic {
+  display: grid;
+  gap: 16px;
+  align-content: start;
+  height: 100%;
+}
+
+.console-checkbox-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 12px;
+}
+
+.permission-matrix-shell {
+  overflow-x: auto;
+}
+
+.permission-matrix {
+  min-width: 860px;
+  display: grid;
+  grid-template-columns: minmax(240px, 1.45fr) repeat(4, minmax(110px, 1fr));
+  align-items: stretch;
+}
+
+.permission-matrix-head {
+  padding: 0 12px 14px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-align: center;
+}
+
+.permission-matrix-head-label {
+  text-align: left;
+}
+
+.permission-matrix-row {
+  display: contents;
+}
+
+.permission-matrix-label,
+.permission-matrix-cell {
+  min-height: 62px;
+  border-top: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(255, 255, 255, 0.44);
+}
+
+.permission-matrix-label {
+  display: flex;
+  align-items: center;
+  padding: 14px 16px;
+  color: var(--text);
+  font-weight: 600;
+}
+
+.permission-matrix-cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.permission-matrix-cell input {
+  width: 20px;
+  min-height: 20px;
+  padding: 0;
+}
+
 .page-actions {
   grid-template-columns: repeat(auto-fit, minmax(180px, max-content));
   justify-content: start;
@@ -2058,6 +2168,10 @@ textarea {
   .booking-grid,
   .feature-grid,
   .form-grid,
+  .console-grid-main,
+  .console-grid-triple,
+  .console-grid-compact,
+  .permission-role-strip,
   .user-list-head,
   .user-list-row,
   .menu-filter-grid,
@@ -2131,6 +2245,7 @@ textarea {
 
   .feature-grid,
   .form-grid,
+  .console-checkbox-grid,
   .menu-location-grid,
   .menu-filter-toolbar,
   .location-switcher,
