@@ -13,6 +13,24 @@ import { getAccessibleLocations } from "../../../lib/queries";
 
 export const dynamic = "force-dynamic";
 
+const tableViews = [
+  {
+    key: "zones",
+    label: "Zone",
+    description: "Organizza sala, dehors, piani e aree."
+  },
+  {
+    key: "tables",
+    label: "Tavoli",
+    description: "Anagrafica tavoli e codici operativi."
+  },
+  {
+    key: "combinations",
+    label: "Combinazioni",
+    description: "Definisci quali tavoli si possono unire."
+  }
+];
+
 function getPublicLocationName(location) {
   return location.technicalSettings?.displayName || location.name;
 }
@@ -78,8 +96,12 @@ function sortZones(zones) {
   );
 }
 
-function getLocationHref(locationId) {
-  return `/admin/tavoli?locationId=${locationId}`;
+function getLocationHref(locationId, view = "tables") {
+  return `/admin/tavoli?locationId=${locationId}&view=${view}`;
+}
+
+function getViewHref(locationId, view) {
+  return `/admin/tavoli?locationId=${locationId}&view=${view}`;
 }
 
 function CombinableTableSelector({ currentTableId = "", tables, selectedIds = [] }) {
@@ -111,6 +133,159 @@ function CombinableTableSelector({ currentTableId = "", tables, selectedIds = []
   );
 }
 
+function NewZoneDialog({ location, sortedZones }) {
+  return (
+    <AdminDialog
+      buttonClassName="button button-primary"
+      buttonLabel="Nuova zona"
+      description="Crea prima le zone del locale, poi assegna i tavoli al contesto corretto."
+      title="Crea una nuova zona"
+    >
+      <form action={saveLocationZoneAction} className="entity-form">
+        <input name="locationId" type="hidden" value={location.id} />
+
+        <div className="form-grid">
+          <label>
+            <span>Nome zona</span>
+            <input name="name" placeholder="Sala interna" required type="text" />
+          </label>
+          <label>
+            <span>Ordine</span>
+            <input defaultValue={sortedZones.length + 1} min="0" name="sortOrder" type="number" />
+          </label>
+        </div>
+
+        <label className="checkbox-item">
+          <input defaultChecked name="active" type="checkbox" />
+          <span>Zona attiva</span>
+        </label>
+
+        <button className="button button-primary" type="submit">
+          Crea zona
+        </button>
+      </form>
+    </AdminDialog>
+  );
+}
+
+function TableCreationDialogs({ location, sortedZones }) {
+  return (
+    <>
+      <AdminDialog
+        buttonClassName="button button-muted"
+        buttonLabel="Genera tavoli"
+        description="Crea in blocco una sequenza di tavoli gia collegata a una zona."
+        title="Generazione rapida tavoli"
+      >
+        <form action={generateTablesAction} className="entity-form">
+          <input name="locationId" type="hidden" value={location.id} />
+
+          <div className="form-grid">
+            <label>
+              <span>Prefisso</span>
+              <input defaultValue="T" name="prefix" type="text" />
+            </label>
+            <label>
+              <span>Coperti per tavolo</span>
+              <input defaultValue="4" min="1" name="seats" type="number" />
+            </label>
+            <label>
+              <span>Da numero</span>
+              <input defaultValue="1" min="1" name="from" type="number" />
+            </label>
+            <label>
+              <span>A numero</span>
+              <input
+                defaultValue={Math.max(location.tables.length + 1, 1)}
+                min="1"
+                name="to"
+                type="number"
+              />
+            </label>
+            <label>
+              <span>Zona esistente</span>
+              <select defaultValue="" name="zoneId">
+                <option value="">Seleziona una zona</option>
+                {sortedZones.map((zone) => (
+                  <option key={zone.id} value={zone.id}>
+                    {zone.name}
+                    {zone.active ? "" : " (inattiva)"}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Oppure nuova zona</span>
+              <input name="newZoneName" placeholder="Piano superiore" type="text" />
+            </label>
+          </div>
+
+          <button className="button button-primary" type="submit">
+            Genera tavoli
+          </button>
+        </form>
+      </AdminDialog>
+
+      <AdminDialog
+        buttonClassName="button button-muted"
+        buttonLabel="Nuovo tavolo"
+        description="Crea un tavolo singolo con codice, coperti e zona di appartenenza."
+        title="Aggiungi un tavolo"
+      >
+        <form action={saveTableAction} className="entity-form">
+          <input name="locationId" type="hidden" value={location.id} />
+
+          <div className="form-grid">
+            <label>
+              <span>Codice tavolo</span>
+              <input defaultValue={`T${location.tables.length + 1}`} name="code" required type="text" />
+            </label>
+            <label>
+              <span>Coperti</span>
+              <input defaultValue="4" min="1" name="seats" required type="number" />
+            </label>
+            <label>
+              <span>Zona esistente</span>
+              <select defaultValue="" name="zoneId">
+                <option value="">Seleziona una zona</option>
+                {sortedZones.map((zone) => (
+                  <option key={zone.id} value={zone.id}>
+                    {zone.name}
+                    {zone.active ? "" : " (inattiva)"}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label>
+              <span>Oppure nuova zona</span>
+              <input name="newZoneName" placeholder="Giardino" type="text" />
+            </label>
+          </div>
+
+          <label className="checkbox-item">
+            <input defaultChecked name="active" type="checkbox" />
+            <span>Tavolo attivo</span>
+          </label>
+
+          <div className="menu-location-picker">
+            <div className="menu-location-picker-head">
+              <div>
+                <strong>Tavoli combinabili</strong>
+                <p>Seleziona i tavoli che possono essere uniti a questo tavolo.</p>
+              </div>
+            </div>
+            <CombinableTableSelector tables={location.tables} />
+          </div>
+
+          <button className="button button-primary" type="submit">
+            Salva tavolo
+          </button>
+        </form>
+      </AdminDialog>
+    </>
+  );
+}
+
 export default async function TavoliPage({ searchParams }) {
   const user = await requireUser();
   requirePageAccess(user, "tables");
@@ -119,6 +294,8 @@ export default async function TavoliPage({ searchParams }) {
   const requestedLocationId = Array.isArray(params?.locationId)
     ? params.locationId[0]
     : params?.locationId;
+  const requestedView = String(params?.view || "tables");
+  const activeView = tableViews.find((view) => view.key === requestedView)?.key || "tables";
   const locations = sortLocations(await getAccessibleLocations(user));
   const selectedLocation =
     locations.find((location) => location.id === requestedLocationId) || null;
@@ -145,8 +322,8 @@ export default async function TavoliPage({ searchParams }) {
               <h2>Scegli la sede da gestire</h2>
               <p>
                 {requestedLocationId
-                  ? "La sede selezionata non e' piu' disponibile per questo profilo. Scegli un altro locale."
-                  : "Prima di modificare zone e tavoli scegli la sede, cosi' lavori sempre nel contesto corretto."}
+                  ? "La sede selezionata non e piu disponibile per questo profilo. Scegli un altro locale."
+                  : "Prima di modificare zone, tavoli o combinazioni scegli la sede corretta."}
               </p>
             </div>
             <div className="row-meta">
@@ -171,6 +348,9 @@ export default async function TavoliPage({ searchParams }) {
   const sortedZones = sortZones(selectedLocation.zones || []);
   const zoneGroups = buildZoneGroups({ ...selectedLocation, zones: sortedZones });
   const zoneLookup = new Map(zoneGroups.map((group) => [group.name, group]));
+  const allTables = [...selectedLocation.tables].sort((left, right) =>
+    naturalCompare(left.code, right.code)
+  );
   const canManageTables = canAccessPage(user, "tables", "manage");
   const canDeleteTables = canAccessPage(user, "tables", "delete");
   const activeTables = selectedLocation.tables.filter((table) => table.active).length;
@@ -182,14 +362,11 @@ export default async function TavoliPage({ searchParams }) {
         <div className="panel-header">
           <div>
             <h2>Gestione tavoli</h2>
-            <p>
-              Prima scegli la sede, poi apri solo le azioni che ti servono: creazione in modale,
-              modifica puntuale dentro schede compatte.
-            </p>
+            <p>Una sede alla volta, con tre viste distinte: zone, tavoli e combinazioni.</p>
           </div>
           <div className="row-meta">
-            <span>{locations.length} sedi accessibili</span>
             <span>{selectedLocation.tables.length} tavoli in sede</span>
+            <span>{locations.length} sedi accessibili</span>
           </div>
         </div>
 
@@ -197,14 +374,16 @@ export default async function TavoliPage({ searchParams }) {
           <AdminDialog
             buttonClassName="button button-muted"
             buttonLabel="Cambia sede"
-            description="Scegli il locale da gestire prima di intervenire su zone e tavoli."
+            description="Scegli il locale da gestire prima di intervenire sulla sala."
             title="Seleziona una sede"
           >
             <div className="location-picker-grid">
               {locations.map((location) => (
                 <Link
-                  className={location.id === selectedLocation.id ? "location-pill active" : "location-pill"}
-                  href={getLocationHref(location.id)}
+                  className={
+                    location.id === selectedLocation.id ? "location-pill active" : "location-pill"
+                  }
+                  href={getLocationHref(location.id, activeView)}
                   key={location.id}
                 >
                   <strong>{location.name}</strong>
@@ -215,165 +394,14 @@ export default async function TavoliPage({ searchParams }) {
             </div>
           </AdminDialog>
 
+          <Link className="button button-muted" href={`/admin/sala?locationId=${selectedLocation.id}`}>
+            Apri mappa sala
+          </Link>
+
           {canManageTables ? (
             <>
-              <AdminDialog
-                buttonClassName="button button-primary"
-                buttonLabel="Nuova zona"
-                description="Crea prima le zone del locale, poi assegna i tavoli al contesto giusto."
-                title="Crea una nuova zona"
-              >
-                <form action={saveLocationZoneAction} className="entity-form">
-                  <input name="locationId" type="hidden" value={selectedLocation.id} />
-
-                  <div className="form-grid">
-                    <label>
-                      <span>Nome zona</span>
-                      <input name="name" placeholder="Sala interna" required type="text" />
-                    </label>
-                    <label>
-                      <span>Ordine</span>
-                      <input
-                        defaultValue={sortedZones.length + 1}
-                        min="0"
-                        name="sortOrder"
-                        type="number"
-                      />
-                    </label>
-                  </div>
-
-                  <label className="checkbox-item">
-                    <input defaultChecked name="active" type="checkbox" />
-                    <span>Zona attiva</span>
-                  </label>
-
-                  <button className="button button-primary" type="submit">
-                    Crea zona
-                  </button>
-                </form>
-              </AdminDialog>
-
-              <AdminDialog
-                buttonClassName="button button-muted"
-                buttonLabel="Genera tavoli"
-                description="Crea in blocco una sequenza di tavoli gia' collegata a una zona esistente o nuova."
-                title="Generazione rapida tavoli"
-              >
-                <form action={generateTablesAction} className="entity-form">
-                  <input name="locationId" type="hidden" value={selectedLocation.id} />
-
-                  <div className="form-grid">
-                    <label>
-                      <span>Prefisso</span>
-                      <input defaultValue="T" name="prefix" type="text" />
-                    </label>
-                    <label>
-                      <span>Coperti per tavolo</span>
-                      <input defaultValue="4" min="1" name="seats" type="number" />
-                    </label>
-                    <label>
-                      <span>Da numero</span>
-                      <input defaultValue="1" min="1" name="from" type="number" />
-                    </label>
-                    <label>
-                      <span>A numero</span>
-                      <input
-                        defaultValue={Math.max(selectedLocation.tables.length + 1, 1)}
-                        min="1"
-                        name="to"
-                        type="number"
-                      />
-                    </label>
-                    <label>
-                      <span>Zona esistente</span>
-                      <select defaultValue="" name="zoneId">
-                        <option value="">Seleziona una zona</option>
-                        {sortedZones.map((zone) => (
-                          <option key={zone.id} value={zone.id}>
-                            {zone.name}
-                            {zone.active ? "" : " (inattiva)"}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      <span>Oppure nuova zona</span>
-                      <input name="newZoneName" placeholder="Piano superiore" type="text" />
-                    </label>
-                  </div>
-
-                  <p className="helper-copy">
-                    Se compili la nuova zona, viene creata automaticamente e usata per tutti i tavoli
-                    generati.
-                  </p>
-
-                  <button className="button button-primary" type="submit">
-                    Genera tavoli
-                  </button>
-                </form>
-              </AdminDialog>
-
-              <AdminDialog
-                buttonClassName="button button-muted"
-                buttonLabel="Nuovo tavolo"
-                description="Crea un tavolo singolo con codice, coperti e zona di appartenenza."
-                title="Aggiungi un tavolo"
-              >
-                <form action={saveTableAction} className="entity-form">
-                  <input name="locationId" type="hidden" value={selectedLocation.id} />
-
-                  <div className="form-grid">
-                    <label>
-                      <span>Codice tavolo</span>
-                      <input
-                        defaultValue={`T${selectedLocation.tables.length + 1}`}
-                        name="code"
-                        required
-                        type="text"
-                      />
-                    </label>
-                    <label>
-                      <span>Coperti</span>
-                      <input defaultValue="4" min="1" name="seats" required type="number" />
-                    </label>
-                    <label>
-                      <span>Zona esistente</span>
-                      <select defaultValue="" name="zoneId">
-                        <option value="">Seleziona una zona</option>
-                        {sortedZones.map((zone) => (
-                          <option key={zone.id} value={zone.id}>
-                            {zone.name}
-                            {zone.active ? "" : " (inattiva)"}
-                          </option>
-                        ))}
-                      </select>
-                    </label>
-                    <label>
-                      <span>Oppure nuova zona</span>
-                      <input name="newZoneName" placeholder="Giardino" type="text" />
-                    </label>
-                  </div>
-
-                  <label className="checkbox-item">
-                    <input defaultChecked name="active" type="checkbox" />
-                    <span>Tavolo attivo</span>
-                  </label>
-
-                  <div className="menu-location-picker">
-                    <div className="menu-location-picker-head">
-                      <div>
-                        <strong>Tavoli combinabili</strong>
-                        <p>Seleziona i tavoli che possono essere uniti a questo tavolo.</p>
-                      </div>
-                    </div>
-                    <CombinableTableSelector tables={selectedLocation.tables} />
-                  </div>
-
-                  <button className="button button-primary" type="submit">
-                    Salva tavolo
-                  </button>
-                </form>
-              </AdminDialog>
+              <NewZoneDialog location={selectedLocation} sortedZones={sortedZones} />
+              <TableCreationDialogs location={selectedLocation} sortedZones={sortedZones} />
             </>
           ) : null}
         </div>
@@ -397,28 +425,52 @@ export default async function TavoliPage({ searchParams }) {
 
         <div className="zone-summary-grid">
           <article className="summary-chip">
-            <strong>Tutti i tavoli</strong>
-            <span>{selectedLocation.tables.length} tavoli configurati</span>
+            <strong>{selectedLocation.tables.length}</strong>
+            <span>tavoli configurati</span>
             <small>{totalCovers} coperti complessivi</small>
           </article>
-
-          {zoneGroups.map((group) => (
-            <article className="summary-chip" key={group.id}>
-              <strong>{group.name}</strong>
-              <span>
-                {group.tables.length} tavoli - {group.covers} coperti
-              </span>
-              <small>{group.active ? "Zona attiva" : "Zona inattiva"}</small>
-            </article>
-          ))}
+          <article className="summary-chip">
+            <strong>{sortedZones.length}</strong>
+            <span>zone</span>
+            <small>{activeTables} tavoli attivi</small>
+          </article>
+          <article className="summary-chip">
+            <strong>{allTables.filter((table) => table.combinableWithIds?.length).length}</strong>
+            <span>tavoli combinabili</span>
+            <small>relazioni attive in sala</small>
+          </article>
         </div>
       </section>
 
       <section className="panel-card">
         <div className="panel-header">
           <div>
+            <h2>Vista gestione</h2>
+            <p>Cambia prospettiva senza perdere il contesto della sede selezionata.</p>
+          </div>
+        </div>
+
+        <div className="admin-section-tabs">
+          {tableViews.map((view) => (
+            <Link
+              className={
+                activeView === view.key ? "admin-section-tab active" : "admin-section-tab"
+              }
+              href={getViewHref(selectedLocation.id, view.key)}
+              key={view.key}
+            >
+              <strong>{view.label}</strong>
+              <span>{view.description}</span>
+            </Link>
+          ))}
+        </div>
+      </section>
+
+      <section className="panel-card" hidden={activeView !== "zones"}>
+        <div className="panel-header">
+          <div>
             <h2>Zone della sede</h2>
-            <p>La lista e' compatta: apri l&apos;editor solo sulla zona che vuoi modificare.</p>
+            <p>Configura le aree del locale prima di distribuire i tavoli.</p>
           </div>
           <div className="row-meta">
             <span>{sortedZones.length} zone salvate</span>
@@ -473,7 +525,6 @@ export default async function TavoliPage({ searchParams }) {
                             <input defaultChecked={zone.active} name="active" type="checkbox" />
                             <span>Zona visibile</span>
                           </label>
-
                           <button className="button button-primary" type="submit">
                             Aggiorna zona
                           </button>
@@ -483,7 +534,7 @@ export default async function TavoliPage({ searchParams }) {
                   ) : (
                     <div className="note-box">
                       <strong>Accesso in sola lettura</strong>
-                      <p>Puoi consultare i dati della zona ma non modificarli.</p>
+                      <p>Puoi consultare la configurazione delle zone ma non modificarla.</p>
                     </div>
                   )}
                 </article>
@@ -491,140 +542,200 @@ export default async function TavoliPage({ searchParams }) {
             })}
           </div>
         ) : (
-          <p className="empty-copy">
-            Nessuna zona creata. Parti da &quot;Nuova zona&quot; per organizzare sala interna,
-            terrazza o esterno.
-          </p>
+          <p className="empty-copy">Nessuna zona creata. Parti da "Nuova zona".</p>
         )}
       </section>
 
-      {zoneGroups.map((group) => (
-        <section className="panel-card" key={group.id}>
-          <div className="panel-header">
-            <div>
-              <h2>{group.name}</h2>
-              <p>
-                {group.tables.length} tavoli - {group.covers} coperti
-              </p>
-            </div>
-            <div className="row-meta">
-              <span>{group.active ? "Zona attiva" : "Zona inattiva"}</span>
-            </div>
+      <section className="panel-card" hidden={activeView !== "tables"}>
+        <div className="panel-header">
+          <div>
+            <h2>Tavoli per zona</h2>
+            <p>Anagrafica tavoli organizzata per area del locale.</p>
           </div>
+        </div>
 
-          {group.tables.length > 0 ? (
-            <div className="table-card-grid">
-              {group.tables.map((table) => (
-                <article className="table-admin-card" key={table.id}>
-                  <div className="table-admin-card-head">
-                    <div>
-                      <strong>{table.code}</strong>
-                      <p>
-                        {table.seats} coperti - {table.active ? "attivo" : "inattivo"}
-                      </p>
-                      {table.combinableWithIds?.length ? (
-                        <p>
-                          Combinabile con{" "}
-                          {table.combinableWithIds
-                            .map((tableId) => selectedLocation.tables.find((item) => item.id === tableId)?.code)
-                            .filter(Boolean)
-                            .sort((left, right) => naturalCompare(left, right))
-                            .join(", ")}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="row-meta">
-                      <Link href={`/table/${table.id}`}>Apri QR tavolo</Link>
-                      <span>/table/{table.id}</span>
-                    </div>
-                  </div>
-
-                  {canManageTables ? (
-                    <details className="inline-editor">
-                      <summary>Modifica tavolo</summary>
-                      <form action={saveTableAction} className="entity-form">
-                        <input name="tableId" type="hidden" value={table.id} />
-                        <input name="locationId" type="hidden" value={selectedLocation.id} />
-
-                        <div className="form-grid">
-                          <label>
-                            <span>Codice tavolo</span>
-                            <input defaultValue={table.code} name="code" required type="text" />
-                          </label>
-                          <label>
-                            <span>Coperti</span>
-                            <input defaultValue={table.seats} min="1" name="seats" required type="number" />
-                          </label>
-                          <label>
-                            <span>Zona esistente</span>
-                            <select defaultValue={table.zoneId || ""} name="zoneId">
-                              <option value="">Senza zona</option>
-                              {sortedZones.map((zone) => (
-                                <option key={zone.id} value={zone.id}>
-                                  {zone.name}
-                                  {zone.active ? "" : " (inattiva)"}
-                                </option>
-                              ))}
-                            </select>
-                          </label>
-                          <label>
-                            <span>Oppure nuova zona</span>
-                            <input
-                              name="newZoneName"
-                              placeholder="Compila solo per creare una nuova zona"
-                              type="text"
-                            />
-                          </label>
-                        </div>
-
-                        <div className="menu-location-picker">
-                          <div className="menu-location-picker-head">
-                            <div>
-                              <strong>Tavoli combinabili</strong>
-                              <p>Relazione bidirezionale: selezionando qui aggiorni anche l'altro tavolo.</p>
-                            </div>
-                          </div>
-                          <CombinableTableSelector
-                            currentTableId={table.id}
-                            selectedIds={table.combinableWithIds || []}
-                            tables={selectedLocation.tables}
-                          />
-                        </div>
-
-                        <div className="entity-footer">
-                          <label className="checkbox-item">
-                            <input defaultChecked={table.active} name="active" type="checkbox" />
-                            <span>Tavolo attivo</span>
-                          </label>
-                          <button className="button button-primary" type="submit">
-                            Aggiorna tavolo
-                          </button>
-                        </div>
-                      </form>
-                    </details>
-                  ) : (
-                    <div className="note-box">
-                      <strong>Dettaglio tavolo</strong>
-                      <p>Zona: {group.name}. QR disponibile dal link sopra.</p>
-                    </div>
-                  )}
-
-                  {canDeleteTables ? (
-                    <form action={deleteTableAction} className="table-card-actions">
-                      <input name="tableId" type="hidden" value={table.id} />
-                      <button className="button button-danger" type="submit">
-                        Elimina tavolo
-                      </button>
-                    </form>
-                  ) : null}
-                </article>
-              ))}
+        {zoneGroups.map((group) => (
+          <section className="section-card" key={group.id}>
+            <div className="panel-header">
+              <div>
+                <h2>{group.name}</h2>
+                <p>
+                  {group.tables.length} tavoli - {group.covers} coperti
+                </p>
+              </div>
+              <div className="row-meta">
+                <span>{group.active ? "Zona attiva" : "Zona inattiva"}</span>
+              </div>
             </div>
-          ) : (
-            <p className="empty-copy">Nessun tavolo assegnato a questa zona.</p>
-          )}
-        </section>
-      ))}
+
+            {group.tables.length > 0 ? (
+              <div className="table-card-grid">
+                {group.tables.map((table) => (
+                  <article className="table-admin-card" key={table.id}>
+                    <div className="table-admin-card-head">
+                      <div>
+                        <strong>{table.code}</strong>
+                        <p>
+                          {table.seats} coperti - {table.active ? "attivo" : "inattivo"}
+                        </p>
+                      </div>
+                      <div className="row-meta">
+                        <Link href={`/table/${table.id}`}>Apri QR tavolo</Link>
+                        <span>/table/{table.id}</span>
+                      </div>
+                    </div>
+
+                    {canManageTables ? (
+                      <details className="inline-editor">
+                        <summary>Modifica tavolo</summary>
+                        <form action={saveTableAction} className="entity-form">
+                          <input name="tableId" type="hidden" value={table.id} />
+                          <input name="locationId" type="hidden" value={selectedLocation.id} />
+
+                          <div className="form-grid">
+                            <label>
+                              <span>Codice tavolo</span>
+                              <input defaultValue={table.code} name="code" required type="text" />
+                            </label>
+                            <label>
+                              <span>Coperti</span>
+                              <input
+                                defaultValue={table.seats}
+                                min="1"
+                                name="seats"
+                                required
+                                type="number"
+                              />
+                            </label>
+                            <label>
+                              <span>Zona esistente</span>
+                              <select defaultValue={table.zoneId || ""} name="zoneId">
+                                <option value="">Senza zona</option>
+                                {sortedZones.map((zone) => (
+                                  <option key={zone.id} value={zone.id}>
+                                    {zone.name}
+                                    {zone.active ? "" : " (inattiva)"}
+                                  </option>
+                                ))}
+                              </select>
+                            </label>
+                            <label>
+                              <span>Oppure nuova zona</span>
+                              <input
+                                name="newZoneName"
+                                placeholder="Compila solo per creare una nuova zona"
+                                type="text"
+                              />
+                            </label>
+                          </div>
+
+                          <div className="entity-footer">
+                            <label className="checkbox-item">
+                              <input defaultChecked={table.active} name="active" type="checkbox" />
+                              <span>Tavolo attivo</span>
+                            </label>
+                            <button className="button button-primary" type="submit">
+                              Aggiorna tavolo
+                            </button>
+                          </div>
+                        </form>
+                      </details>
+                    ) : (
+                      <div className="note-box">
+                        <strong>Dettaglio tavolo</strong>
+                        <p>Zona: {group.name}. QR disponibile dal link sopra.</p>
+                      </div>
+                    )}
+
+                    {canDeleteTables ? (
+                      <form action={deleteTableAction} className="table-card-actions">
+                        <input name="tableId" type="hidden" value={table.id} />
+                        <button className="button button-danger" type="submit">
+                          Elimina tavolo
+                        </button>
+                      </form>
+                    ) : null}
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <p className="empty-copy">Nessun tavolo assegnato a questa zona.</p>
+            )}
+          </section>
+        ))}
+      </section>
+
+      <section className="panel-card" hidden={activeView !== "combinations"}>
+        <div className="panel-header">
+          <div>
+            <h2>Combinazioni tavoli</h2>
+            <p>Definisci le unioni tavoli in una vista dedicata e piu leggibile.</p>
+          </div>
+        </div>
+
+        <div className="table-card-grid">
+          {allTables.map((table) => {
+            const combinableCodes = (table.combinableWithIds || [])
+              .map((tableId) => allTables.find((item) => item.id === tableId)?.code)
+              .filter(Boolean)
+              .sort((left, right) => naturalCompare(left, right));
+
+            return (
+              <article className="table-admin-card" key={table.id}>
+                <div className="table-admin-card-head">
+                  <div>
+                    <strong>{table.code}</strong>
+                    <p>
+                      {table.seats} coperti - {getZoneName(table)}
+                    </p>
+                  </div>
+                  <div className="row-meta">
+                    <span>{table.active ? "Tavolo attivo" : "Tavolo inattivo"}</span>
+                  </div>
+                </div>
+
+                <div className="note-box">
+                  <strong>Combinazioni attuali</strong>
+                  <p>{combinableCodes.length ? combinableCodes.join(", ") : "Nessuna combinazione attiva."}</p>
+                </div>
+
+                {canManageTables ? (
+                  <details className="inline-editor">
+                    <summary>Gestisci combinazioni</summary>
+                    <form action={saveTableAction} className="entity-form">
+                      <input name="tableId" type="hidden" value={table.id} />
+                      <input name="locationId" type="hidden" value={selectedLocation.id} />
+                      <input name="code" type="hidden" value={table.code} />
+                      <input name="seats" type="hidden" value={table.seats} />
+                      <input name="zoneId" type="hidden" value={table.zoneId || ""} />
+                      <input name="newZoneName" type="hidden" value="" />
+                      <input name="active" type="hidden" value={table.active ? "true" : "false"} />
+
+                      <CombinableTableSelector
+                        currentTableId={table.id}
+                        selectedIds={table.combinableWithIds || []}
+                        tables={allTables}
+                      />
+
+                      <div className="entity-footer">
+                        <span>Le relazioni si aggiornano anche sull'altro tavolo.</span>
+                        <button className="button button-primary" type="submit">
+                          Salva combinazioni
+                        </button>
+                      </div>
+                    </form>
+                  </details>
+                ) : (
+                  <div className="note-box">
+                    <strong>Accesso in sola lettura</strong>
+                    <p>Puoi vedere le combinazioni ma non modificarle.</p>
+                  </div>
+                )}
+              </article>
+            );
+          })}
+        </div>
+      </section>
     </div>
   );
 }

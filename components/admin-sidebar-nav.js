@@ -11,6 +11,34 @@ function isActivePath(pathname, href) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
+function groupItems(items, showPermissions) {
+  const grouped = new Map();
+
+  for (const item of items) {
+    const section = item.section || "Altro";
+
+    if (!grouped.has(section)) {
+      grouped.set(section, []);
+    }
+
+    grouped.get(section).push(item);
+  }
+
+  if (showPermissions) {
+    if (!grouped.has("Amministrazione")) {
+      grouped.set("Amministrazione", []);
+    }
+
+    grouped.get("Amministrazione").push({
+      href: "/admin/permessi",
+      label: "Permessi",
+      page: "permissions"
+    });
+  }
+
+  return [...grouped.entries()];
+}
+
 export default function AdminSidebarNav({
   items,
   onNavigate,
@@ -18,37 +46,36 @@ export default function AdminSidebarNav({
   showPermissions
 }) {
   const pathname = usePathname();
+  const groupedItems = groupItems(items, showPermissions);
 
   return (
     <nav className="sidebar-nav">
-      {items.map((item) => {
-        const isReservations = item.page === "reservations";
-        const active = isActivePath(pathname, item.href);
+      {groupedItems.map(([section, sectionItems]) => (
+        <div className="sidebar-nav-group" key={section}>
+          <div className="sidebar-nav-group-label">{section}</div>
 
-        return (
-          <Link
-            className={active ? "sidebar-link active" : "sidebar-link"}
-            href={item.href}
-            key={item.href}
-            onClick={onNavigate}
-          >
-            <span className="nav-label">{item.label}</span>
-            {isReservations && pendingCount > 0 ? (
-              <span className="nav-badge">{pendingCount}</span>
-            ) : null}
-          </Link>
-        );
-      })}
+          <div className="sidebar-nav-group-items">
+            {sectionItems.map((item) => {
+              const isReservations = item.href === "/admin/prenotazioni";
+              const active = isActivePath(pathname, item.href);
 
-      {showPermissions ? (
-        <Link
-          className={isActivePath(pathname, "/admin/permessi") ? "sidebar-link active" : "sidebar-link"}
-          href="/admin/permessi"
-          onClick={onNavigate}
-        >
-          <span className="nav-label">Permessi</span>
-        </Link>
-      ) : null}
+              return (
+                <Link
+                  className={active ? "sidebar-link active" : "sidebar-link"}
+                  href={item.href}
+                  key={item.href}
+                  onClick={onNavigate}
+                >
+                  <span className="nav-label">{item.label}</span>
+                  {isReservations && pendingCount > 0 ? (
+                    <span className="nav-badge">{pendingCount}</span>
+                  ) : null}
+                </Link>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </nav>
   );
 }
