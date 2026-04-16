@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { requireUser } from "../../../lib/auth";
 import { saveAdminConsoleLocationAction } from "../../../lib/actions/admin-actions";
+import { RESERVATION_STATUS_LABELS } from "../../../lib/constants";
 import { canAccessPage, requirePageAccess } from "../../../lib/permissions";
 import { getAdminConsoleLocations } from "../../../lib/queries";
 
@@ -258,6 +259,221 @@ export default async function ConsoleAdminPage() {
                           defaultValue={technical.paymentWebhookSecret || ""}
                           name="paymentWebhookSecret"
                           type="text"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="section-card">
+                    <div className="panel-header">
+                      <h2>1s2u SMS</h2>
+                      <p>
+                        Integrazione SMS per notificare il cliente quando la prenotazione entra in
+                        stati specifici.
+                      </p>
+                    </div>
+
+                    <div className="checkbox-grid">
+                      <label className="checkbox-item">
+                        <input
+                          defaultChecked={Boolean(technical.smsEnabled)}
+                          name="smsEnabled"
+                          type="checkbox"
+                        />
+                        <span>Abilita invio SMS via 1s2u</span>
+                      </label>
+                    </div>
+
+                    <div className="form-grid">
+                      <label>
+                        <span>Alias mittente</span>
+                        <input
+                          defaultValue={technical.smsAlias || ""}
+                          name="smsAlias"
+                          placeholder="COPERTO"
+                          type="text"
+                        />
+                      </label>
+                      <label>
+                        <span>Username API</span>
+                        <input
+                          defaultValue={technical.smsUsername || ""}
+                          name="smsUsername"
+                          type="text"
+                        />
+                      </label>
+                      <label className="full-width">
+                        <span>Password API</span>
+                        <input
+                          defaultValue={technical.smsPassword || ""}
+                          name="smsPassword"
+                          type="text"
+                        />
+                      </label>
+                      <label className="full-width">
+                        <span>Template SMS cambio stato</span>
+                        <textarea
+                          defaultValue={
+                            technical.reservationStatusSmsTemplate ||
+                            "Ciao {{cliente}}, la tua prenotazione da {{sede}} e' ora {{stato}} per {{data}} alle {{orario}}. Gestiscila qui: {{link_prenotazione}}"
+                          }
+                          name="reservationStatusSmsTemplate"
+                          rows="4"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="checkbox-grid">
+                      {Object.entries(RESERVATION_STATUS_LABELS).map(([value, label]) => (
+                        <label className="checkbox-item" key={`${location.id}-${value}`}>
+                          <input
+                            defaultChecked={
+                              technical.reservationStatusSmsStatuses?.includes(value)
+                            }
+                            name="reservationStatusSmsStatuses"
+                            type="checkbox"
+                            value={value}
+                          />
+                          <span>Invia SMS quando diventa {label}</span>
+                        </label>
+                      ))}
+                    </div>
+
+                    <label>
+                      <span>Template SMS liberazione tavolo da coda</span>
+                      <textarea
+                        defaultValue={
+                          technical.waitlistSmsTemplate ||
+                          "Ciao {{cliente}}, si e' liberato un tavolo da {{sede}} per {{data}} alle {{orario}}. Gestisci la prenotazione qui: {{link_prenotazione}}"
+                        }
+                        name="waitlistSmsTemplate"
+                        rows="4"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="section-card">
+                    <div className="panel-header">
+                      <h2>Link cliente</h2>
+                      <p>
+                        Messaggi e canali per inviare il link con cui il cliente puo' modificare o
+                        cancellare la prenotazione.
+                      </p>
+                    </div>
+
+                    <div className="form-grid">
+                      <label>
+                        <span>Canale invio link</span>
+                        <select
+                          defaultValue={technical.manageLinkDeliveryMode || "SMS"}
+                          name="manageLinkDeliveryMode"
+                        >
+                          <option value="SMS">Solo SMS</option>
+                          <option value="EMAIL">Solo email</option>
+                          <option value="BOTH">SMS + email</option>
+                        </select>
+                      </label>
+                      <label className="full-width">
+                        <span>Template SMS link prenotazione</span>
+                        <textarea
+                          defaultValue={
+                            technical.manageLinkSmsTemplate ||
+                            "Ciao {{cliente}}, modifica o cancella la tua prenotazione per {{sede}} qui: {{link_prenotazione}}"
+                          }
+                          name="manageLinkSmsTemplate"
+                          rows="4"
+                        />
+                      </label>
+                      <label>
+                        <span>Oggetto email link prenotazione</span>
+                        <input
+                          defaultValue={
+                            technical.manageLinkEmailSubject ||
+                            "Gestisci la tua prenotazione"
+                          }
+                          name="manageLinkEmailSubject"
+                          type="text"
+                        />
+                      </label>
+                      <label className="full-width">
+                        <span>Corpo email link prenotazione</span>
+                        <textarea
+                          defaultValue={
+                            technical.manageLinkEmailTemplate ||
+                            "Ciao {{cliente}},\n\npuoi gestire la tua prenotazione per {{sede}} qui:\n{{link_prenotazione}}\n\nData: {{data}}\nOrario: {{orario}}\nCoperti: {{coperti}}"
+                          }
+                          name="manageLinkEmailTemplate"
+                          rows="6"
+                        />
+                      </label>
+                    </div>
+                  </div>
+
+                  <div className="section-card">
+                    <div className="panel-header">
+                      <h2>Email SMTP</h2>
+                      <p>
+                        Configurazione opzionale per inviare email clienti direttamente dal
+                        gestionale.
+                      </p>
+                    </div>
+
+                    <div className="form-grid">
+                      <label>
+                        <span>SMTP host</span>
+                        <input
+                          defaultValue={technical.smtpHost || ""}
+                          name="smtpHost"
+                          placeholder="smtp.provider.it"
+                          type="text"
+                        />
+                      </label>
+                      <label>
+                        <span>SMTP port</span>
+                        <input
+                          defaultValue={technical.smtpPort || 587}
+                          name="smtpPort"
+                          type="number"
+                        />
+                      </label>
+                      <label className="checkbox-item">
+                        <input
+                          defaultChecked={Boolean(technical.smtpSecure)}
+                          name="smtpSecure"
+                          type="checkbox"
+                        />
+                        <span>Connessione sicura (SSL/TLS)</span>
+                      </label>
+                      <label>
+                        <span>SMTP username</span>
+                        <input
+                          defaultValue={technical.smtpUsername || ""}
+                          name="smtpUsername"
+                          type="text"
+                        />
+                      </label>
+                      <label>
+                        <span>SMTP password</span>
+                        <input
+                          defaultValue={technical.smtpPassword || ""}
+                          name="smtpPassword"
+                          type="text"
+                        />
+                      </label>
+                      <label>
+                        <span>Nome mittente</span>
+                        <input
+                          defaultValue={technical.smtpFromName || ""}
+                          name="smtpFromName"
+                          type="text"
+                        />
+                      </label>
+                      <label className="full-width">
+                        <span>Email mittente</span>
+                        <input
+                          defaultValue={technical.smtpFromEmail || ""}
+                          name="smtpFromEmail"
+                          type="email"
                         />
                       </label>
                     </div>

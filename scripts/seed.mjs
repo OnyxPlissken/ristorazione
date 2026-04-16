@@ -134,6 +134,8 @@ async function main() {
             pageTitle: "Prenota da Sede Centrale",
             welcomeMessage: "Compila il form per inviare la tua richiesta.",
             durationMinutes: 120,
+            useTimeSlots: true,
+            slotIntervalMinutes: 30,
             leadTimeMinutes: 60,
             minGuests: 1,
             maxGuests: 8,
@@ -149,7 +151,10 @@ async function main() {
             deliveryEnabled: false,
             paymentsEnabled: false,
             googleBusinessEnabled: false,
-            reservationEmails: "booking@sede-centrale.it"
+            reservationEmails: "booking@sede-centrale.it",
+            smsEnabled: false,
+            manageLinkDeliveryMode: "SMS",
+            reservationStatusSmsStatuses: []
           }
         },
         openingHours: {
@@ -246,7 +251,10 @@ async function main() {
       deliveryEnabled: false,
       paymentsEnabled: false,
       googleBusinessEnabled: false,
-      reservationEmails: "booking@sede-centrale.it"
+      reservationEmails: "booking@sede-centrale.it",
+      smsEnabled: false,
+      manageLinkDeliveryMode: "SMS",
+      reservationStatusSmsStatuses: []
     }
   });
 

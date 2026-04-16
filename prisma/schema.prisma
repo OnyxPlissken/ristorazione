@@ -29,6 +29,19 @@ enum ReservationSource {
   ADMIN
   TELEFONO
   WALK_IN
+  WAITLIST
+}
+
+enum WaitlistStatus {
+  OPEN
+  CONVERTED
+  CLOSED
+}
+
+enum NotificationDeliveryMode {
+  SMS
+  EMAIL
+  BOTH
 }
 
 enum TableSessionStatus {
@@ -80,6 +93,7 @@ model Location {
   technicalSettings   LocationTechnicalSetting?
   tableSessions       TableSession[]
   userAssignments     UserLocation[]
+  waitlistEntries     WaitlistEntry[]
 }
 
 model RolePermission {
@@ -128,6 +142,24 @@ model LocationTechnicalSetting {
   paymentApiKey           String?
   paymentWebhookSecret    String?
   paymentCheckoutBaseUrl  String?
+  smsEnabled              Boolean   @default(false)
+  smsAlias                String?
+  smsUsername             String?
+  smsPassword             String?
+  reservationStatusSmsStatuses String[] @default([])
+  reservationStatusSmsTemplate String?
+  waitlistSmsTemplate     String?
+  manageLinkDeliveryMode  NotificationDeliveryMode @default(SMS)
+  manageLinkSmsTemplate   String?
+  manageLinkEmailSubject  String?
+  manageLinkEmailTemplate String?
+  smtpHost                String?
+  smtpPort                Int?
+  smtpSecure              Boolean   @default(false)
+  smtpUsername            String?
+  smtpPassword            String?
+  smtpFromName            String?
+  smtpFromEmail           String?
   technicalNotes          String?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
@@ -232,6 +264,8 @@ model ReservationSetting {
   pageTitle          String?
   welcomeMessage     String?
   durationMinutes    Int      @default(120)
+  useTimeSlots       Boolean  @default(true)
+  slotIntervalMinutes Int     @default(30)
   leadTimeMinutes    Int      @default(60)
   minGuests          Int      @default(1)
   maxGuests          Int      @default(8)
@@ -244,6 +278,7 @@ model Reservation {
   id          String            @id @default(cuid())
   locationId  String
   tableId     String?
+  manageToken String?           @unique
   guestName   String
   guestEmail  String?
   guestPhone  String?
@@ -256,6 +291,25 @@ model Reservation {
   updatedAt   DateTime          @updatedAt
   location    Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
   table       DiningTable?      @relation(fields: [tableId], references: [id], onDelete: SetNull)
+  waitlistEntries WaitlistEntry[]
+}
+
+model WaitlistEntry {
+  id                String         @id @default(cuid())
+  locationId        String
+  reservationId     String?
+  guestName         String
+  guestEmail        String?
+  guestPhone        String?
+  guests            Int
+  preferredDateTime DateTime
+  notes             String?
+  status            WaitlistStatus @default(OPEN)
+  notifiedAt        DateTime?
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
+  location          Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  reservation       Reservation?   @relation(fields: [reservationId], references: [id], onDelete: SetNull)
 }
 
 model TableSession {
