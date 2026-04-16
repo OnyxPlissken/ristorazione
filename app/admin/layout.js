@@ -8,10 +8,13 @@ export const dynamic = "force-dynamic";
 const navigation = [
   { href: "/admin", label: "Dashboard", page: "dashboard" },
   { href: "/admin/sedi", label: "Sedi", page: "locations" },
+  { href: "/admin/sala", label: "Sala", page: "tables" },
   { href: "/admin/tavoli", label: "Tavoli", page: "tables" },
   { href: "/admin/menu", label: "Menu", page: "menus" },
   { href: "/admin/orari", label: "Orari", page: "hours" },
+  { href: "/admin/calendario", label: "Calendario", page: "reservations" },
   { href: "/admin/prenotazioni", label: "Prenotazioni", page: "reservations" },
+  { href: "/admin/registro", label: "Registro", page: "reservations" },
   { href: "/admin/utenti", label: "Utenti", page: "users" },
   { href: "/admin/console", label: "Console Admin", page: "console" }
 ];

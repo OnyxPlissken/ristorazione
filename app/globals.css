@@ -1660,6 +1660,18 @@ textarea {
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 
+.table-combination-grid,
+.floor-grid,
+.calendar-list,
+.activity-log-list {
+  display: grid;
+  gap: 14px;
+}
+
+.table-combination-grid {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
 .table-admin-card {
   display: grid;
   gap: 16px;
@@ -1696,6 +1708,102 @@ textarea {
 
 .inline-editor[open] summary {
   margin-bottom: 4px;
+}
+
+.table-status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--text);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.table-status-chip.free,
+.table-status-chip.sent {
+  background: rgba(32, 89, 65, 0.12);
+  color: #1d5d44;
+}
+
+.table-status-chip.occupied,
+.table-status-chip.scheduled,
+.table-status-chip.skipped {
+  background: rgba(232, 155, 102, 0.18);
+  color: #7d2d17;
+}
+
+.table-status-chip.failed,
+.table-status-chip.inactive {
+  background: rgba(157, 68, 40, 0.12);
+  color: #7d2d17;
+}
+
+.floor-grid {
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+}
+
+.floor-card,
+.calendar-card,
+.activity-log-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border-radius: 20px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(255, 255, 255, 0.54);
+}
+
+.floor-card-head,
+.activity-log-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.floor-card-head p,
+.activity-log-head p,
+.calendar-card-main p {
+  margin: 6px 0 0;
+  color: var(--muted);
+}
+
+.floor-card-actions {
+  padding-top: 4px;
+}
+
+.calendar-list {
+  align-content: start;
+}
+
+.calendar-card {
+  grid-template-columns: minmax(110px, 0.34fr) minmax(0, 1fr) minmax(220px, 0.8fr);
+  align-items: start;
+}
+
+.calendar-card-time,
+.calendar-card-main,
+.calendar-card-meta {
+  display: grid;
+  gap: 6px;
+}
+
+.calendar-card-time span,
+.calendar-card-meta span {
+  color: var(--muted);
+}
+
+.calendar-card-time strong {
+  font-size: 1.1rem;
+}
+
+.activity-log-list {
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
 }
 
 .modal-backdrop {
@@ -2274,6 +2382,10 @@ textarea {
   }
 
   .menu-table-row {
+    grid-template-columns: 1fr;
+  }
+
+  .calendar-card {
     grid-template-columns: 1fr;
   }
 

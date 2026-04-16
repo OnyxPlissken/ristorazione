@@ -82,6 +82,35 @@ function getLocationHref(locationId) {
   return `/admin/tavoli?locationId=${locationId}`;
 }
 
+function CombinableTableSelector({ currentTableId = "", tables, selectedIds = [] }) {
+  const options = tables.filter((table) => table.id !== currentTableId);
+
+  if (options.length === 0) {
+    return <p className="helper-copy">Nessun altro tavolo disponibile per creare combinazioni.</p>;
+  }
+
+  return (
+    <div className="table-combination-grid">
+      {options.map((table) => (
+        <label className="menu-location-option" key={`${currentTableId || "new"}-${table.id}`}>
+          <input
+            defaultChecked={selectedIds.includes(table.id)}
+            name="combinableWithIds"
+            type="checkbox"
+            value={table.id}
+          />
+          <div>
+            <strong>{table.code}</strong>
+            <span>
+              {table.seats} coperti - {getZoneName(table)}
+            </span>
+          </div>
+        </label>
+      ))}
+    </div>
+  );
+}
+
 export default async function TavoliPage({ searchParams }) {
   const user = await requireUser();
   requirePageAccess(user, "tables");
@@ -330,6 +359,16 @@ export default async function TavoliPage({ searchParams }) {
                     <span>Tavolo attivo</span>
                   </label>
 
+                  <div className="menu-location-picker">
+                    <div className="menu-location-picker-head">
+                      <div>
+                        <strong>Tavoli combinabili</strong>
+                        <p>Seleziona i tavoli che possono essere uniti a questo tavolo.</p>
+                      </div>
+                    </div>
+                    <CombinableTableSelector tables={selectedLocation.tables} />
+                  </div>
+
                   <button className="button button-primary" type="submit">
                     Salva tavolo
                   </button>
@@ -483,6 +522,16 @@ export default async function TavoliPage({ searchParams }) {
                       <p>
                         {table.seats} coperti - {table.active ? "attivo" : "inattivo"}
                       </p>
+                      {table.combinableWithIds?.length ? (
+                        <p>
+                          Combinabile con{" "}
+                          {table.combinableWithIds
+                            .map((tableId) => selectedLocation.tables.find((item) => item.id === tableId)?.code)
+                            .filter(Boolean)
+                            .sort((left, right) => naturalCompare(left, right))
+                            .join(", ")}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="row-meta">
                       <Link href={`/table/${table.id}`}>Apri QR tavolo</Link>
@@ -526,6 +575,20 @@ export default async function TavoliPage({ searchParams }) {
                               type="text"
                             />
                           </label>
+                        </div>
+
+                        <div className="menu-location-picker">
+                          <div className="menu-location-picker-head">
+                            <div>
+                              <strong>Tavoli combinabili</strong>
+                              <p>Relazione bidirezionale: selezionando qui aggiorni anche l'altro tavolo.</p>
+                            </div>
+                          </div>
+                          <CombinableTableSelector
+                            currentTableId={table.id}
+                            selectedIds={table.combinableWithIds || []}
+                            tables={selectedLocation.tables}
+                          />
                         </div>
 
                         <div className="entity-footer">

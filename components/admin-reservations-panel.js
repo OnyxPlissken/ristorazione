@@ -25,6 +25,7 @@ function matchesSearch(reservation, normalizedQuery) {
     reservation.guestPhone,
     reservation.locationName,
     reservation.table?.code,
+    ...(reservation.assignedTableCodes || []),
     reservation.notes
   ]
     .filter(Boolean)
@@ -115,9 +116,11 @@ function ReservationRow({ reservation, canManageReservations }) {
 
         <div className="entity-footer">
           <span>
-            {reservation.table
-              ? `Assegnato a ${reservation.table.code}`
-              : "Nessun tavolo assegnato"}
+            {reservation.assignedTableCodes?.length
+              ? `Assegnato a ${reservation.assignedTableCodes.join(" + ")}`
+              : reservation.table
+                ? `Assegnato a ${reservation.table.code}`
+                : "Nessun tavolo assegnato"}
           </span>
           <button className="button button-primary" type="submit">
             {pending ? "Aggiornamento..." : "Aggiorna prenotazione"}

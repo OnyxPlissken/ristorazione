@@ -309,6 +309,64 @@ async function main() {
     });
   }
 
+  const tables = await prisma.diningTable.findMany({
+    where: {
+      locationId: location.id
+    },
+    orderBy: {
+      code: "asc"
+    }
+  });
+
+  const tableByCode = new Map(tables.map((table) => [table.code, table]));
+
+  if (tableByCode.has("T1") && tableByCode.has("T2")) {
+    await prisma.diningTable.update({
+      where: {
+        id: tableByCode.get("T1").id
+      },
+      data: {
+        combinableWithIds: [tableByCode.get("T2").id]
+      }
+    });
+
+    await prisma.diningTable.update({
+      where: {
+        id: tableByCode.get("T2").id
+      },
+      data: {
+        combinableWithIds: [tableByCode.get("T1").id]
+      }
+    });
+  }
+
+  const specialDate = new Date();
+  specialDate.setDate(specialDate.getDate() + 3);
+  specialDate.setHours(0, 0, 0, 0);
+
+  await prisma.openingHourException.upsert({
+    where: {
+      locationId_date: {
+        locationId: location.id,
+        date: specialDate
+      }
+    },
+    update: {
+      opensAt: "19:00",
+      closesAt: "23:30",
+      isClosed: false,
+      note: "Servizio serale speciale"
+    },
+    create: {
+      locationId: location.id,
+      date: specialDate,
+      opensAt: "19:00",
+      closesAt: "23:30",
+      isClosed: false,
+      note: "Servizio serale speciale"
+    }
+  });
+
   console.log(`Admin email: ${email}`);
 
   if (generatedPassword) {

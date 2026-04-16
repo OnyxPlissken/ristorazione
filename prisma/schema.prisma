@@ -44,6 +44,18 @@ enum NotificationDeliveryMode {
   BOTH
 }
 
+enum NotificationChannel {
+  SMS
+  EMAIL
+  INTERNAL
+}
+
+enum NotificationLogStatus {
+  SENT
+  FAILED
+  SKIPPED
+}
+
 enum TableSessionStatus {
   OPEN
   PAYMENT_REQUESTED
@@ -62,6 +74,7 @@ model User {
   updatedAt      DateTime       @updatedAt
   sessions       Session[]
   locationAccess UserLocation[]
+  auditLogs      AuditLog[]
 }
 
 model Session {
@@ -85,6 +98,7 @@ model Location {
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   openingHours        OpeningHour[]
+  openingExceptions   OpeningHourException[]
   zones               LocationZone[]
   tables              DiningTable[]
   menus               Menu[]
@@ -94,6 +108,8 @@ model Location {
   tableSessions       TableSession[]
   userAssignments     UserLocation[]
   waitlistEntries     WaitlistEntry[]
+  notificationLogs    NotificationLog[]
+  auditLogs           AuditLog[]
 }
 
 model RolePermission {
@@ -188,6 +204,21 @@ model OpeningHour {
   @@unique([locationId, weekday])
 }
 
+model OpeningHourException {
+  id         String   @id @default(cuid())
+  locationId String
+  date       DateTime
+  opensAt    String?
+  closesAt   String?
+  isClosed   Boolean  @default(false)
+  note       String?
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+  location   Location @relation(fields: [locationId], references: [id], onDelete: Cascade)
+
+  @@unique([locationId, date])
+}
+
 model LocationZone {
   id         String       @id @default(cuid())
   locationId String
@@ -209,6 +240,7 @@ model DiningTable {
   code         String
   seats        Int
   zone         String?
+  combinableWithIds String[] @default([])
   active       Boolean       @default(true)
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
@@ -278,6 +310,7 @@ model Reservation {
   id          String            @id @default(cuid())
   locationId  String
   tableId     String?
+  tableIds    String[]          @default([])
   manageToken String?           @unique
   guestName   String
   guestEmail  String?
@@ -292,6 +325,8 @@ model Reservation {
   location    Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
   table       DiningTable?      @relation(fields: [tableId], references: [id], onDelete: SetNull)
   waitlistEntries WaitlistEntry[]
+  notificationLogs NotificationLog[]
+  auditLogs   AuditLog[]
 }
 
 model WaitlistEntry {
@@ -310,6 +345,42 @@ model WaitlistEntry {
   updatedAt         DateTime       @updatedAt
   location          Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
   reservation       Reservation?   @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  notificationLogs  NotificationLog[]
+}
+
+model NotificationLog {
+  id             String                @id @default(cuid())
+  locationId     String
+  reservationId  String?
+  waitlistEntryId String?
+  channel        NotificationChannel
+  status         NotificationLogStatus @default(SENT)
+  event          String
+  destination    String?
+  subject        String?
+  contentPreview String?
+  providerResponse String?
+  errorMessage   String?
+  createdAt      DateTime              @default(now())
+  location       Location              @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  reservation    Reservation?          @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  waitlistEntry  WaitlistEntry?        @relation(fields: [waitlistEntryId], references: [id], onDelete: SetNull)
+}
+
+model AuditLog {
+  id            String    @id @default(cuid())
+  locationId    String?
+  reservationId String?
+  userId        String?
+  entityType    String
+  entityId      String
+  action        String
+  summary       String
+  metadata      Json?
+  createdAt     DateTime  @default(now())
+  location      Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
 }
 
 model TableSession {

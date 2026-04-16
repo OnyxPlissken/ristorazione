@@ -27,7 +27,8 @@ export async function GET(request) {
       include: {
         settings: true,
         technicalSettings: true,
-        openingHours: true
+        openingHours: true,
+        openingExceptions: true
       }
     }),
     reservationToken
