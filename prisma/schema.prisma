@@ -63,6 +63,11 @@ enum TableSessionStatus {
   CLOSED
 }
 
+enum TableLayoutShape {
+  RECT
+  ROUND
+}
+
 model User {
   id             String         @id @default(cuid())
   name           String
@@ -141,6 +146,7 @@ model LocationTechnicalSetting {
   displayName             String?
   qrEnabled               Boolean   @default(false)
   reservationsEnabled     Boolean   @default(true)
+  customerTableSelectionEnabled Boolean @default(false)
   deliveryEnabled         Boolean   @default(false)
   paymentsEnabled         Boolean   @default(false)
   googleBusinessEnabled   Boolean   @default(false)
@@ -240,6 +246,12 @@ model DiningTable {
   code         String
   seats        Int
   zone         String?
+  layoutX      Int?
+  layoutY      Int?
+  layoutWidth  Int?
+  layoutHeight Int?
+  layoutRotation Int?
+  layoutShape  TableLayoutShape @default(RECT)
   combinableWithIds String[] @default([])
   active       Boolean       @default(true)
   createdAt    DateTime      @default(now())

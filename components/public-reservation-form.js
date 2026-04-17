@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useState } from "react";
 import { createPublicReservationAction } from "../lib/actions/public-actions";
+import PublicFloorPlanPicker from "./public-floor-plan-picker";
 
 const initialState = {
   error: "",
@@ -22,14 +23,25 @@ export default function PublicReservationForm({ locations }) {
   const [selectedDate, setSelectedDate] = useState(todayValue());
   const [guests, setGuests] = useState("2");
   const [selectedSlot, setSelectedSlot] = useState("");
+  const [selectedDateTime, setSelectedDateTime] = useState("");
+  const [selectedTableId, setSelectedTableId] = useState("");
   const [slotState, setSlotState] = useState({
     loading: false,
     error: "",
     slots: []
   });
+  const [floorPlanState, setFloorPlanState] = useState({
+    loading: false,
+    error: "",
+    enabled: false,
+    zones: []
+  });
 
   const selectedLocation = locations.find((location) => location.id === locationId) || null;
   const usesTimeSlots = selectedLocation?.settings?.useTimeSlots ?? true;
+  const tableSelectionEnabled = Boolean(
+    selectedLocation?.technicalSettings?.customerTableSelectionEnabled
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -100,6 +112,7 @@ export default function PublicReservationForm({ locations }) {
     const existing = slotState.slots.find((slot) => slot.value === selectedSlot);
 
     if (existing) {
+      setSelectedDateTime(existing.value);
       return;
     }
 
@@ -109,7 +122,91 @@ export default function PublicReservationForm({ locations }) {
       "";
 
     setSelectedSlot(nextSlot);
+    setSelectedDateTime(nextSlot);
   }, [selectedSlot, slotState.slots, usesTimeSlots]);
+
+  useEffect(() => {
+    if (!usesTimeSlots) {
+      return;
+    }
+
+    setSelectedDateTime(selectedSlot);
+  }, [selectedSlot, usesTimeSlots]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFloorPlan() {
+      if (!tableSelectionEnabled || !locationId || !selectedDateTime) {
+        setFloorPlanState({
+          loading: false,
+          error: "",
+          enabled: false,
+          zones: []
+        });
+        setSelectedTableId("");
+        return;
+      }
+
+      setFloorPlanState((current) => ({
+        ...current,
+        loading: true,
+        error: ""
+      }));
+
+      try {
+        const response = await fetch(
+          `/api/public/floor-plan?locationId=${encodeURIComponent(locationId)}&dateTime=${encodeURIComponent(selectedDateTime)}&guests=${encodeURIComponent(guests || "2")}`,
+          {
+            cache: "no-store"
+          }
+        );
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || "Impossibile caricare la planimetria.");
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        const nextZones = payload.zones || [];
+        const stillSelected = nextZones.some((zone) =>
+          zone.tables.some((table) => table.id === selectedTableId && table.selectable)
+        );
+
+        if (!stillSelected) {
+          setSelectedTableId("");
+        }
+
+        setFloorPlanState({
+          loading: false,
+          error: "",
+          enabled: Boolean(payload.enabled),
+          zones: nextZones
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setFloorPlanState({
+          loading: false,
+          error: error.message || "Impossibile caricare la planimetria.",
+          enabled: true,
+          zones: []
+        });
+        setSelectedTableId("");
+      }
+    }
+
+    loadFloorPlan();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [guests, locationId, selectedDateTime, tableSelectionEnabled]);
 
   return (
     <form action={action} className="panel-card form-panel">
@@ -176,7 +273,7 @@ export default function PublicReservationForm({ locations }) {
               >
                 {slotState.slots.map((slot) => (
                   <option key={slot.value} value={slot.value}>
-                    {slot.label} {slot.available ? "• disponibile" : "• non disponibile"}
+                    {slot.label} - {slot.available ? "disponibile" : "non disponibile"}
                   </option>
                 ))}
               </select>
@@ -186,7 +283,12 @@ export default function PublicReservationForm({ locations }) {
         ) : (
           <label>
             <span>Data e ora</span>
-            <input name="dateTime" required type="datetime-local" />
+            <input
+              name="dateTime"
+              onChange={(event) => setSelectedDateTime(event.target.value)}
+              required
+              type="datetime-local"
+            />
           </label>
         )}
 
@@ -215,6 +317,17 @@ export default function PublicReservationForm({ locations }) {
                 : "Gli slot sono generati in base agli orari della sede e alla durata tavolo configurata."}
         </div>
       ) : null}
+
+      <input name="selectedTableId" type="hidden" value={selectedTableId} />
+
+      <PublicFloorPlanPicker
+        enabled={floorPlanState.enabled}
+        error={floorPlanState.error}
+        loading={floorPlanState.loading}
+        onSelect={setSelectedTableId}
+        selectedTableId={selectedTableId}
+        zones={floorPlanState.zones}
+      />
 
       <label>
         <span>Note</span>

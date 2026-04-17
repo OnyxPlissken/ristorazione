@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { AdminDialog } from "../../../components/admin-dialog";
+import AdminFloorLayoutEditor from "../../../components/admin-floor-layout-editor";
 import {
   deleteTableAction,
   generateTablesAction,
@@ -28,6 +29,11 @@ const tableViews = [
     key: "combinations",
     label: "Combinazioni",
     description: "Definisci quali tavoli si possono unire."
+  },
+  {
+    key: "layout",
+    label: "Planimetria",
+    description: "Disponi i tavoli su una mappa virtuale per admin e clienti."
   }
 ];
 
@@ -362,7 +368,7 @@ export default async function TavoliPage({ searchParams }) {
         <div className="panel-header">
           <div>
             <h2>Gestione tavoli</h2>
-            <p>Una sede alla volta, con tre viste distinte: zone, tavoli e combinazioni.</p>
+            <p>Una sede alla volta, con viste distinte per zone, tavoli, combinazioni e planimetria.</p>
           </div>
           <div className="row-meta">
             <span>{selectedLocation.tables.length} tavoli in sede</span>
@@ -735,6 +741,13 @@ export default async function TavoliPage({ searchParams }) {
             );
           })}
         </div>
+      </section>
+
+      <section className="panel-card" hidden={activeView !== "layout"}>
+        <AdminFloorLayoutEditor
+          canManageTables={canManageTables}
+          location={selectedLocation}
+        />
       </section>
     </div>
   );

@@ -39,6 +39,9 @@ function featureSummary(technical, location) {
   if (technical.reservationsEnabled ?? location.reservationEnabled) {
     items.push("Prenotazioni");
   }
+  if (technical.customerTableSelectionEnabled) {
+    items.push("Scelta tavolo");
+  }
   if (technical.deliveryEnabled) {
     items.push("Delivery");
   }
@@ -262,6 +265,14 @@ export default async function ConsoleAdminPage({ searchParams }) {
                           type="checkbox"
                         />
                         <span>Abilita prenotazioni</span>
+                      </label>
+                      <label className="checkbox-item">
+                        <input
+                          defaultChecked={Boolean(technical.customerTableSelectionEnabled)}
+                          name="customerTableSelectionEnabled"
+                          type="checkbox"
+                        />
+                        <span>Consenti scelta tavolo al cliente</span>
                       </label>
                       <label className="checkbox-item">
                         <input

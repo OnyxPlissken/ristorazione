@@ -6,6 +6,7 @@ import {
   updatePublicReservationAction
 } from "../lib/actions/public-actions";
 import { dateInputValue, formatDateTime } from "../lib/format";
+import PublicFloorPlanPicker from "./public-floor-plan-picker";
 
 const initialState = {
   error: "",
@@ -25,13 +26,24 @@ export default function PublicManageReservationForm({ reservation }) {
   const [selectedDate, setSelectedDate] = useState(dateInputValue(reservation.dateTime).slice(0, 10));
   const [guests, setGuests] = useState(String(reservation.guests));
   const [selectedSlot, setSelectedSlot] = useState(dateInputValue(reservation.dateTime));
+  const [selectedDateTime, setSelectedDateTime] = useState(dateInputValue(reservation.dateTime));
+  const [selectedTableId, setSelectedTableId] = useState(reservation.tableId || "");
   const [slotState, setSlotState] = useState({
     loading: false,
     error: "",
     slots: []
   });
+  const [floorPlanState, setFloorPlanState] = useState({
+    loading: false,
+    error: "",
+    enabled: false,
+    zones: []
+  });
 
   const usesTimeSlots = reservation.location.settings?.useTimeSlots ?? true;
+  const tableSelectionEnabled = Boolean(
+    reservation.location.technicalSettings?.customerTableSelectionEnabled
+  );
   const isLocked = ["CANCELLATA", "COMPLETATA", "NO_SHOW"].includes(reservation.status);
 
   useEffect(() => {
@@ -103,15 +115,99 @@ export default function PublicManageReservationForm({ reservation }) {
     const current = slotState.slots.find((slot) => slot.value === selectedSlot);
 
     if (current) {
+      setSelectedDateTime(current.value);
       return;
     }
 
-    setSelectedSlot(
+    const nextSlot =
       slotState.slots.find((slot) => slot.available)?.value ||
-        slotState.slots[0]?.value ||
-        ""
-    );
+      slotState.slots[0]?.value ||
+      "";
+
+    setSelectedSlot(nextSlot);
+    setSelectedDateTime(nextSlot);
   }, [selectedSlot, slotState.slots, usesTimeSlots]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadFloorPlan() {
+      if (!tableSelectionEnabled || !selectedDateTime) {
+        setFloorPlanState({
+          loading: false,
+          error: "",
+          enabled: false,
+          zones: []
+        });
+        setSelectedTableId("");
+        return;
+      }
+
+      setFloorPlanState((current) => ({
+        ...current,
+        loading: true,
+        error: ""
+      }));
+
+      try {
+        const response = await fetch(
+          `/api/public/floor-plan?locationId=${encodeURIComponent(reservation.locationId)}&dateTime=${encodeURIComponent(selectedDateTime)}&guests=${encodeURIComponent(guests)}&reservationToken=${encodeURIComponent(reservation.manageToken)}`,
+          {
+            cache: "no-store"
+          }
+        );
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || "Impossibile caricare la planimetria.");
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        const nextZones = payload.zones || [];
+        const stillSelected = nextZones.some((zone) =>
+          zone.tables.some((table) => table.id === selectedTableId && table.selectable)
+        );
+
+        if (!stillSelected) {
+          setSelectedTableId("");
+        }
+
+        setFloorPlanState({
+          loading: false,
+          error: "",
+          enabled: Boolean(payload.enabled),
+          zones: nextZones
+        });
+      } catch (error) {
+        if (cancelled) {
+          return;
+        }
+
+        setFloorPlanState({
+          loading: false,
+          error: error.message || "Impossibile caricare la planimetria.",
+          enabled: true,
+          zones: []
+        });
+        setSelectedTableId("");
+      }
+    }
+
+    loadFloorPlan();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    guests,
+    reservation.locationId,
+    reservation.manageToken,
+    selectedDateTime,
+    tableSelectionEnabled
+  ]);
 
   return (
     <section className="panel-card">
@@ -131,6 +227,7 @@ export default function PublicManageReservationForm({ reservation }) {
       <form action={updateAction} className="entity-form">
         <input name="manageToken" type="hidden" value={reservation.manageToken || ""} />
         <input name="locationId" type="hidden" value={reservation.locationId} />
+        <input name="selectedTableId" type="hidden" value={selectedTableId} />
 
         <fieldset className="form-fieldset" disabled={isLocked || updatePending || cancelPending}>
           <div className="form-grid">
@@ -148,13 +245,16 @@ export default function PublicManageReservationForm({ reservation }) {
                 <label>
                   <span>Slot orario</span>
                   <select
-                    onChange={(event) => setSelectedSlot(event.target.value)}
+                    onChange={(event) => {
+                      setSelectedSlot(event.target.value);
+                      setSelectedDateTime(event.target.value);
+                    }}
                     required
                     value={selectedSlot}
                   >
                     {slotState.slots.map((slot) => (
                       <option key={slot.value} value={slot.value}>
-                        {slot.label} {slot.available ? "• disponibile" : "• non disponibile"}
+                        {slot.label} - {slot.available ? "disponibile" : "non disponibile"}
                       </option>
                     ))}
                   </select>
@@ -167,6 +267,7 @@ export default function PublicManageReservationForm({ reservation }) {
                 <input
                   defaultValue={dateInputValue(reservation.dateTime)}
                   name="dateTime"
+                  onChange={(event) => setSelectedDateTime(event.target.value)}
                   required
                   type="datetime-local"
                 />
@@ -206,6 +307,15 @@ export default function PublicManageReservationForm({ reservation }) {
             </div>
           ) : null}
 
+          <PublicFloorPlanPicker
+            enabled={floorPlanState.enabled}
+            error={floorPlanState.error}
+            loading={floorPlanState.loading}
+            onSelect={setSelectedTableId}
+            selectedTableId={selectedTableId}
+            zones={floorPlanState.zones}
+          />
+
           <label>
             <span>Note</span>
             <textarea defaultValue={reservation.notes || ""} name="notes" rows="4" />
@@ -218,9 +328,11 @@ export default function PublicManageReservationForm({ reservation }) {
 
           <div className="entity-footer">
             <span>
-              {reservation.table
-                ? `Tavolo assegnato: ${reservation.table.code}`
-                : "Il tavolo verra' riassegnato in base alla disponibilita'."}
+              {selectedTableId
+                ? "Hai selezionato un tavolo specifico per il nuovo slot."
+                : reservation.table
+                  ? `Tavolo attuale: ${reservation.table.code}`
+                  : "Il tavolo verra' assegnato automaticamente se non ne scegli uno."}
             </span>
             <div className="cta-row">
               <button

@@ -2977,6 +2977,165 @@ textarea {
   color: var(--muted);
 }
 
+.admin-floor-layout-shell,
+.admin-floor-layout {
+  display: grid;
+  gap: 14px;
+}
+
+.admin-floor-layout {
+  grid-template-columns: 220px minmax(0, 1fr) 320px;
+  align-items: start;
+}
+
+.admin-floor-rail,
+.admin-floor-inspector {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.admin-floor-zone-tabs,
+.admin-floor-table-list {
+  display: grid;
+  gap: 8px;
+}
+
+.admin-floor-table-row {
+  display: grid;
+  gap: 4px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.admin-floor-table-row span {
+  color: var(--muted);
+  font-size: 0.84rem;
+}
+
+.admin-floor-table-row.active {
+  border-color: rgba(19, 35, 30, 0.18);
+  background: rgba(19, 35, 30, 0.06);
+}
+
+.admin-floor-stage-wrap,
+.public-floor-stage-shell {
+  overflow: auto;
+  padding-bottom: 4px;
+}
+
+.admin-floor-stage,
+.public-floor-stage {
+  position: relative;
+  border-radius: 16px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background:
+    linear-gradient(rgba(19, 35, 30, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(19, 35, 30, 0.05) 1px, transparent 1px),
+    #faf8f2;
+  background-size: 48px 48px;
+}
+
+.admin-floor-node,
+.public-floor-table {
+  position: absolute;
+  display: grid;
+  place-items: center;
+  gap: 2px;
+  padding: 6px;
+  border: 1px solid rgba(19, 35, 30, 0.12);
+  background: #fff;
+  color: var(--text);
+  cursor: pointer;
+  text-align: center;
+  box-shadow: 0 4px 12px rgba(33, 24, 10, 0.08);
+}
+
+.admin-floor-node strong,
+.public-floor-table strong {
+  font-size: 0.88rem;
+}
+
+.admin-floor-node span,
+.public-floor-table span {
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.admin-floor-node.active {
+  border-color: rgba(19, 35, 30, 0.32);
+  box-shadow: 0 0 0 2px rgba(19, 35, 30, 0.12);
+}
+
+.public-floor-plan-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.public-floor-zone-tabs,
+.public-floor-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.public-floor-table.selectable {
+  background: rgba(32, 89, 65, 0.12);
+  border-color: rgba(32, 89, 65, 0.2);
+}
+
+.public-floor-table.available {
+  background: rgba(232, 155, 102, 0.14);
+  border-color: rgba(157, 68, 40, 0.18);
+  cursor: default;
+}
+
+.public-floor-table.unavailable {
+  background: rgba(19, 35, 30, 0.08);
+  border-color: rgba(19, 35, 30, 0.1);
+  opacity: 0.7;
+  cursor: default;
+}
+
+.public-floor-table.selected {
+  background: rgba(19, 35, 30, 0.92);
+  border-color: transparent;
+  color: var(--text-inverse);
+}
+
+.public-floor-table.selected span {
+  color: rgba(255, 248, 239, 0.76);
+}
+
+.public-floor-legend-item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  padding: 0 10px;
+  border-radius: 999px;
+  font-size: 0.82rem;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+}
+
+.public-floor-legend-item.selectable {
+  background: rgba(32, 89, 65, 0.12);
+  color: #1d5d44;
+}
+
+.public-floor-legend-item.available {
+  background: rgba(232, 155, 102, 0.14);
+  color: #7d2d17;
+}
+
+.public-floor-legend-item.unavailable {
+  background: rgba(19, 35, 30, 0.08);
+  color: var(--muted);
+}
+
 @media (max-width: 1120px) {
   .booking-grid,
   .feature-grid,
@@ -3010,6 +3169,7 @@ textarea {
   .permission-summary-strip,
   .console-block-grid-split,
   .console-block-grid-triple,
+  .admin-floor-layout,
   .reservation-detail-grid,
   .reservation-editor-grid,
   .reservation-info-grid,
@@ -3150,6 +3310,11 @@ textarea {
 
   .menu-item-row {
     grid-template-columns: 1fr;
+  }
+
+  .admin-floor-stage,
+  .public-floor-stage {
+    width: 960px;
   }
 
   .console-table-head {
