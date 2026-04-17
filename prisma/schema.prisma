@@ -80,6 +80,7 @@ model User {
   sessions       Session[]
   locationAccess UserLocation[]
   auditLogs      AuditLog[]
+  notificationReads AdminNotificationRead[]
 }
 
 model Session {
@@ -114,6 +115,7 @@ model Location {
   userAssignments     UserLocation[]
   waitlistEntries     WaitlistEntry[]
   notificationLogs    NotificationLog[]
+  adminNotifications  AdminNotification[]
   auditLogs           AuditLog[]
 }
 
@@ -339,6 +341,7 @@ model Reservation {
   table       DiningTable?      @relation(fields: [tableId], references: [id], onDelete: SetNull)
   waitlistEntries WaitlistEntry[]
   notificationLogs NotificationLog[]
+  adminNotifications AdminNotification[]
   auditLogs   AuditLog[]
 }
 
@@ -359,6 +362,7 @@ model WaitlistEntry {
   location          Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
   reservation       Reservation?   @relation(fields: [reservationId], references: [id], onDelete: SetNull)
   notificationLogs  NotificationLog[]
+  adminNotifications AdminNotification[]
 }
 
 model NotificationLog {
@@ -410,8 +414,44 @@ model TableSession {
   table              DiningTable        @relation(fields: [tableId], references: [id], onDelete: Cascade)
   seats              TableSessionSeat[]
   items              TableSessionItem[]
+  adminNotifications AdminNotification[]
 
   @@index([tableId, status])
+}
+
+model AdminNotification {
+  id              String                  @id @default(cuid())
+  locationId      String?
+  reservationId   String?
+  waitlistEntryId String?
+  sessionId       String?
+  type            String
+  title           String
+  body            String
+  href            String?
+  targetRoles     UserRole[]              @default([])
+  metadata        Json?
+  createdAt       DateTime                @default(now())
+  location        Location?               @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  reservation     Reservation?            @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  waitlistEntry   WaitlistEntry?          @relation(fields: [waitlistEntryId], references: [id], onDelete: SetNull)
+  session         TableSession?           @relation(fields: [sessionId], references: [id], onDelete: SetNull)
+  reads           AdminNotificationRead[]
+
+  @@index([createdAt])
+  @@index([locationId, createdAt])
+}
+
+model AdminNotificationRead {
+  id             String            @id @default(cuid())
+  notificationId String
+  userId         String
+  readAt         DateTime          @default(now())
+  notification   AdminNotification @relation(fields: [notificationId], references: [id], onDelete: Cascade)
+  user           User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([notificationId, userId])
+  @@index([userId, readAt])
 }
 
 model TableSessionSeat {

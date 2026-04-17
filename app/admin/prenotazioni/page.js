@@ -5,11 +5,13 @@ import AdminReservationsPanel from "../../../components/admin-reservations-panel
 
 export const dynamic = "force-dynamic";
 
-export default async function PrenotazioniPage() {
+export default async function PrenotazioniPage({ searchParams }) {
   const user = await requireUser();
   requirePageAccess(user, "reservations");
   const canManageReservations = canAccessPage(user, "reservations", "manage");
   const reservations = await getReservationsPageData(user);
+  const params = await searchParams;
+  const reservationId = String(params?.reservationId || "");
 
   return (
     <div className="page-stack">
@@ -24,6 +26,7 @@ export default async function PrenotazioniPage() {
 
       <AdminReservationsPanel
         canManageReservations={canManageReservations}
+        initialSelectedReservationId={reservationId}
         reservations={reservations}
       />
     </div>

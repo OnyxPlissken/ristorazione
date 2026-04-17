@@ -1,4 +1,5 @@
 import AdminChrome from "../../components/admin-chrome";
+import { getAdminNotificationSummary } from "../../lib/admin-notifications";
 import { requireUser, roleLabel } from "../../lib/auth";
 import { canAccessPage } from "../../lib/permissions";
 import { getAdminReservationLiveSummary } from "../../lib/queries";
@@ -40,10 +41,12 @@ export default async function AdminLayout({ children }) {
   const reservationSummary = canAccessPage(user, "reservations")
     ? await getAdminReservationLiveSummary(user)
     : null;
+  const notificationSummary = await getAdminNotificationSummary(user);
 
   return (
     <AdminChrome
       handheldMode={Boolean(user.rolePermission?.useHandheldMode)}
+      initialNotificationSummary={notificationSummary}
       initialReservationSummary={reservationSummary}
       items={items}
       showPermissions={user.role === "ADMIN"}

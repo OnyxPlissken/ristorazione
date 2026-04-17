@@ -3200,6 +3200,281 @@ textarea {
   color: var(--muted);
 }
 
+.notification-item.unread {
+  background: rgba(232, 155, 102, 0.12);
+  border-color: rgba(157, 68, 40, 0.2);
+  box-shadow: inset 3px 0 0 rgba(157, 68, 40, 0.72);
+}
+
+.notification-toast-stack {
+  position: fixed;
+  top: 18px;
+  right: 18px;
+  z-index: 82;
+  display: grid;
+  gap: 10px;
+  width: min(360px, calc(100vw - 24px));
+  pointer-events: none;
+}
+
+.notification-toast {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+  border-radius: 14px;
+  background: rgba(19, 35, 30, 0.96);
+  color: var(--text-inverse);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 18px 34px rgba(19, 35, 30, 0.24);
+  pointer-events: auto;
+}
+
+.notification-toast strong {
+  font-size: 0.92rem;
+}
+
+.notification-toast span {
+  color: rgba(247, 239, 227, 0.76);
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.handheld-dashboard {
+  gap: 18px;
+}
+
+.handheld-hero {
+  background:
+    linear-gradient(145deg, rgba(19, 35, 30, 0.96), rgba(38, 61, 53, 0.92)),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent);
+  color: var(--text-inverse);
+}
+
+.handheld-hero .panel-header p,
+.handheld-hero .row-meta span {
+  color: rgba(247, 239, 227, 0.76);
+}
+
+.handheld-module-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 10px;
+}
+
+.handheld-module-card {
+  display: grid;
+  gap: 6px;
+  min-height: 112px;
+  padding: 16px;
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+}
+
+.handheld-module-card strong {
+  font-size: 1rem;
+  color: var(--text-inverse);
+}
+
+.handheld-module-card span {
+  color: rgba(247, 239, 227, 0.76);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.handheld-reservation-list {
+  display: grid;
+  gap: 10px;
+}
+
+.handheld-reservation-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  min-height: 88px;
+  padding: 16px;
+  border-radius: 14px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: #fff;
+}
+
+.handheld-reservation-card p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.handheld-reservation-card .row-meta {
+  align-items: flex-end;
+}
+
+.admin-floor-node-shell {
+  position: absolute;
+}
+
+.admin-floor-node-shell.active {
+  z-index: 3;
+}
+
+.admin-floor-node-shell .admin-floor-node {
+  position: relative;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+}
+
+.admin-floor-node-handle {
+  position: absolute;
+  right: -7px;
+  bottom: -7px;
+  z-index: 4;
+  width: 18px;
+  height: 18px;
+  border-radius: 999px;
+  border: 2px solid #fff;
+  background: var(--accent);
+  box-shadow: 0 4px 10px rgba(19, 35, 30, 0.22);
+  cursor: nwse-resize;
+}
+
+.admin-floor-stage-tip {
+  margin-bottom: 4px;
+}
+
+.admin-floor-service {
+  display: grid;
+  grid-template-columns: 250px minmax(0, 1fr) 260px;
+  gap: 14px;
+  align-items: start;
+}
+
+.admin-floor-service-sidebar {
+  display: grid;
+  gap: 12px;
+  align-content: start;
+}
+
+.floor-drag-list {
+  display: grid;
+  gap: 8px;
+}
+
+.floor-drag-card,
+.floor-reservation-summary {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: #fff;
+}
+
+.floor-drag-card {
+  text-align: left;
+  cursor: grab;
+}
+
+.floor-drag-card:active {
+  cursor: grabbing;
+}
+
+.floor-drag-card span,
+.floor-drag-card small,
+.floor-reservation-summary span,
+.floor-reservation-summary small {
+  color: var(--muted);
+}
+
+.admin-floor-stage-live {
+  background:
+    radial-gradient(circle at 16% 18%, rgba(255, 255, 255, 0.42), transparent 18%),
+    linear-gradient(rgba(19, 35, 30, 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(19, 35, 30, 0.045) 1px, transparent 1px),
+    #faf8f2;
+  background-size: auto, 48px 48px, 48px 48px, auto;
+}
+
+.admin-floor-live-node {
+  position: absolute;
+  display: grid;
+  grid-template-rows: auto auto 1fr;
+  gap: 8px;
+  padding: 10px;
+  border: 1px solid rgba(19, 35, 30, 0.12);
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 10px 18px rgba(33, 24, 10, 0.06);
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease;
+}
+
+.admin-floor-live-node.drop-target {
+  border-color: rgba(32, 89, 65, 0.48);
+  box-shadow: 0 0 0 3px rgba(32, 89, 65, 0.14);
+}
+
+.admin-floor-live-node.tone-occupied {
+  background: rgba(157, 68, 40, 0.08);
+}
+
+.admin-floor-live-node.tone-scheduled {
+  background: rgba(232, 155, 102, 0.12);
+}
+
+.admin-floor-live-node.tone-inactive {
+  opacity: 0.58;
+}
+
+.admin-floor-live-head,
+.admin-floor-live-status {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.admin-floor-live-head strong {
+  font-size: 0.92rem;
+}
+
+.admin-floor-live-head span {
+  color: var(--muted);
+  font-size: 0.78rem;
+}
+
+.admin-floor-live-reservations {
+  display: grid;
+  align-content: start;
+  gap: 6px;
+}
+
+.admin-floor-live-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(19, 35, 30, 0.1);
+  background: rgba(255, 255, 255, 0.86);
+  color: var(--text);
+  cursor: grab;
+}
+
+.admin-floor-live-chip:active {
+  cursor: grabbing;
+}
+
+.floor-reservation-summary {
+  text-align: left;
+}
+
+.floor-reservation-summary strong {
+  font-size: 0.92rem;
+}
+
 @media (max-width: 1180px) {
   .booking-grid,
   .feature-grid,
@@ -3415,6 +3690,17 @@ textarea {
   .admin-shell.handheld-mode .admin-content .section-card {
     padding: 16px;
   }
+
+  .admin-floor-layout,
+  .admin-floor-service {
+    grid-template-columns: 1fr;
+  }
+
+  .notification-toast-stack {
+    top: 12px;
+    right: 12px;
+    width: min(360px, calc(100vw - 20px));
+  }
 }
 
 @media (max-width: 760px) {
@@ -3498,6 +3784,19 @@ textarea {
     width: 960px;
   }
 
+  .handheld-module-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .handheld-reservation-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .admin-floor-live-node {
+    padding: 8px;
+  }
+
   .console-table-head {
     display: none;
   }
@@ -3538,6 +3837,12 @@ textarea {
     left: 12px;
     width: auto;
     max-height: calc(100vh - 108px);
+  }
+
+  .notification-toast-stack {
+    left: 8px;
+    right: 8px;
+    width: auto;
   }
 
   .notification-panel-header,

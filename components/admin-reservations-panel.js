@@ -229,12 +229,15 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
 }
 
 export default function AdminReservationsPanel({
+  initialSelectedReservationId = "",
   reservations,
   canManageReservations
 }) {
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
-  const [selectedReservationId, setSelectedReservationId] = useState(reservations[0]?.id || "");
+  const [selectedReservationId, setSelectedReservationId] = useState(
+    initialSelectedReservationId || reservations[0]?.id || ""
+  );
   const deferredQuery = useDeferredValue(query);
   const normalizedQuery = deferredQuery.trim().toLowerCase();
   const now = new Date();
@@ -257,6 +260,12 @@ export default function AdminReservationsPanel({
 
     return matchesStatus && matchesSearch(reservation, normalizedQuery);
   });
+
+  useEffect(() => {
+    if (initialSelectedReservationId && reservations.some((reservation) => reservation.id === initialSelectedReservationId)) {
+      setSelectedReservationId(initialSelectedReservationId);
+    }
+  }, [initialSelectedReservationId, reservations]);
 
   useEffect(() => {
     if (!filteredReservations.length) {

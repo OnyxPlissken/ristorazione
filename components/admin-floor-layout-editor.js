@@ -71,12 +71,36 @@ export default function AdminFloorLayoutEditor({ canManageTables, location }) {
         return;
       }
 
-      const { tableId, offsetX, offsetY, stageLeft, stageTop } = dragStateRef.current;
+      const { tableId, mode, offsetX, offsetY, stageLeft, stageTop } = dragStateRef.current;
       setLayouts((current) => {
         const nextLayout = current[tableId];
 
         if (!nextLayout) {
           return current;
+        }
+
+        if (mode === "resize") {
+          const width = clamp(
+            Math.round(dragStateRef.current.originWidth + (event.clientX - dragStateRef.current.startX)),
+            56,
+            180
+          );
+          const height = clamp(
+            Math.round(dragStateRef.current.originHeight + (event.clientY - dragStateRef.current.startY)),
+            48,
+            180
+          );
+
+          return {
+            ...current,
+            [tableId]: {
+              ...nextLayout,
+              width,
+              height,
+              x: clamp(nextLayout.x, 0, FLOOR_PLAN_STAGE_WIDTH - width),
+              y: clamp(nextLayout.y, 0, FLOOR_PLAN_STAGE_HEIGHT - height)
+            }
+          };
         }
 
         const x = clamp(
@@ -209,49 +233,95 @@ export default function AdminFloorLayoutEditor({ canManageTables, location }) {
               }
 
               return (
-                <button
-                  className={table.id === selectedTableId ? "admin-floor-node active" : "admin-floor-node"}
+                <div
+                  className={
+                    table.id === selectedTableId
+                      ? "admin-floor-node-shell active"
+                      : "admin-floor-node-shell"
+                  }
                   key={table.id}
-                  onClick={() => setSelectedTableId(table.id)}
-                  onPointerDown={(event) => {
-                    if (!canManageTables) {
-                      return;
-                    }
-
-                    const stageRect = stageRef.current?.getBoundingClientRect();
-                    const rect = event.currentTarget.getBoundingClientRect();
-
-                    if (!stageRect) {
-                      return;
-                    }
-
-                    dragStateRef.current = {
-                      tableId: table.id,
-                      stageLeft: stageRect.left,
-                      stageTop: stageRect.top,
-                      offsetX: event.clientX - rect.left,
-                      offsetY: event.clientY - rect.top
-                    };
-                  }}
                   style={{
                     left: `${layout.x}px`,
                     top: `${layout.y}px`,
                     width: `${layout.width}px`,
                     height: `${layout.height}px`,
-                    transform: `rotate(${layout.rotation || 0}deg)`,
-                    borderRadius: layout.shape === "ROUND" ? "999px" : "14px"
+                    transform: `rotate(${layout.rotation || 0}deg)`
                   }}
-                  type="button"
                 >
-                  <strong>{table.code}</strong>
-                  <span>{table.seats}</span>
-                </button>
+                  <button
+                    className={table.id === selectedTableId ? "admin-floor-node active" : "admin-floor-node"}
+                    onClick={() => setSelectedTableId(table.id)}
+                    onPointerDown={(event) => {
+                      if (!canManageTables) {
+                        return;
+                      }
+
+                      const stageRect = stageRef.current?.getBoundingClientRect();
+                      const rect = event.currentTarget.getBoundingClientRect();
+
+                      if (!stageRect) {
+                        return;
+                      }
+
+                      dragStateRef.current = {
+                        mode: "move",
+                        tableId: table.id,
+                        stageLeft: stageRect.left,
+                        stageTop: stageRect.top,
+                        offsetX: event.clientX - rect.left,
+                        offsetY: event.clientY - rect.top
+                      };
+                    }}
+                    style={{
+                      borderRadius: layout.shape === "ROUND" ? "999px" : "14px"
+                    }}
+                    type="button"
+                  >
+                    <strong>{table.code}</strong>
+                    <span>{table.seats}</span>
+                  </button>
+                  {canManageTables ? (
+                    <span
+                      className="admin-floor-node-handle"
+                      onPointerDown={(event) => {
+                        event.preventDefault();
+                        event.stopPropagation();
+
+                        const stageRect = stageRef.current?.getBoundingClientRect();
+
+                        if (!stageRect) {
+                          return;
+                        }
+
+                        setSelectedTableId(table.id);
+                        dragStateRef.current = {
+                          mode: "resize",
+                          tableId: table.id,
+                          stageLeft: stageRect.left,
+                          stageTop: stageRect.top,
+                          startX: event.clientX,
+                          startY: event.clientY,
+                          originWidth: layout.width,
+                          originHeight: layout.height
+                        };
+                      }}
+                      role="presentation"
+                    />
+                  ) : null}
+                </div>
               );
             })}
           </div>
         </div>
 
         <div className="admin-floor-inspector">
+          <div className="note-box admin-floor-stage-tip">
+            <strong>Editor completo</strong>
+            <p>
+              Trascina il tavolo per spostarlo. Usa il grip nell&apos;angolo in basso a destra per
+              ridimensionarlo.
+            </p>
+          </div>
           {selectedTable && selectedLayout ? (
             <form action={saveTableLayoutAction} className="entity-form">
               <input name="tableId" type="hidden" value={selectedTable.id} />
@@ -338,7 +408,7 @@ export default function AdminFloorLayoutEditor({ canManageTables, location }) {
               <div className="entity-footer">
                 <span>
                   {canManageTables
-                    ? "Puoi trascinare il tavolo nella planimetria o rifinire i valori qui."
+                    ? "Puoi trascinare, ridimensionare e rifinire i valori dal pannello tecnico."
                     : "Accesso in sola lettura."}
                 </span>
                 {canManageTables ? (

@@ -9,6 +9,7 @@ import {
 } from "../lib/actions/admin-actions";
 import { euro } from "../lib/format";
 import { MENU_SECTION_TEMPLATES } from "../lib/constants";
+import { getInlineImageUploadLimitLabel } from "../lib/media";
 import { AdminDialog } from "./admin-dialog";
 import MenuLocationPicker from "./menu-location-picker";
 
@@ -206,6 +207,9 @@ export default function MenuWorkspacePanel({
                   Il profilo corrente puo&apos; assegnare il menu solo alle sedi che gestisce direttamente.
                 </p>
               ) : null}
+              <p className="helper-copy">
+                Per i piatti puoi usare URL media o caricamento file fino a {getInlineImageUploadLimitLabel()}.
+              </p>
               <button className="button button-primary" type="submit">
                 Aggiorna menu
               </button>
@@ -353,7 +357,7 @@ export default function MenuWorkspacePanel({
 
                   <AdminDialog
                     buttonLabel="Nuovo piatto"
-                    description="Aggiungi piatto, prezzo, allergeni e URL immagine."
+                    description="Aggiungi piatto, prezzo, allergeni e media da URL o file."
                     title={`Nuovo piatto in ${section.name}`}
                   >
                     <form action={saveMenuItemAction} className="entity-form">
@@ -372,8 +376,12 @@ export default function MenuWorkspacePanel({
                           <input name="description" placeholder="Descrizione piatto" type="text" />
                         </label>
                         <label className="full-width">
-                          <span>URL immagine</span>
-                          <input name="imageUrl" placeholder="https://..." type="url" />
+                          <span>URL media</span>
+                          <input name="imageUrl" placeholder="https://... oppure data:..." type="text" />
+                        </label>
+                        <label className="full-width">
+                          <span>Carica immagine</span>
+                          <input accept="image/*" name="imageFile" type="file" />
                         </label>
                         <label>
                           <span>Allergeni</span>
@@ -392,6 +400,9 @@ export default function MenuWorkspacePanel({
                         <input defaultChecked name="available" type="checkbox" />
                         <span>Disponibile</span>
                       </label>
+                      <p className="helper-copy">
+                        Se carichi un file, verra&apos; salvato direttamente nel sistema fino a {getInlineImageUploadLimitLabel()}.
+                      </p>
                       <button className="button button-primary" type="submit">
                         Salva piatto
                       </button>
@@ -452,7 +463,7 @@ export default function MenuWorkspacePanel({
                         {canManageMenus ? (
                           <AdminDialog
                             buttonLabel="Modifica"
-                            description="Aggiorna i dettagli del piatto e l&apos;immagine."
+                            description="Aggiorna i dettagli del piatto e la media associata."
                             title={`Modifica ${item.name}`}
                           >
                             <form action={saveMenuItemAction} className="entity-form">
@@ -472,13 +483,17 @@ export default function MenuWorkspacePanel({
                                   <input defaultValue={item.description || ""} name="description" type="text" />
                                 </label>
                                 <label className="full-width">
-                                  <span>URL immagine</span>
+                                  <span>URL media</span>
                                   <input
                                     defaultValue={item.imageUrl || ""}
                                     name="imageUrl"
-                                    placeholder="https://..."
-                                    type="url"
+                                    placeholder="https://... oppure data:..."
+                                    type="text"
                                   />
+                                </label>
+                                <label className="full-width">
+                                  <span>Carica immagine</span>
+                                  <input accept="image/*" name="imageFile" type="file" />
                                 </label>
                                 <label>
                                   <span>Allergeni</span>
@@ -490,6 +505,10 @@ export default function MenuWorkspacePanel({
                                 </label>
                               </div>
                               <div className="entity-footer">
+                                <label className="checkbox-item">
+                                  <input name="removeImage" type="checkbox" />
+                                  <span>Rimuovi media esistente</span>
+                                </label>
                                 <label className={menuAvailabilityToggleClasses(item.available)}>
                                   <input defaultChecked={item.available} name="available" type="checkbox" />
                                   <span>{item.available ? "Disponibile" : "Non disponibile"}</span>
@@ -498,6 +517,9 @@ export default function MenuWorkspacePanel({
                                   Aggiorna piatto
                                 </button>
                               </div>
+                              <p className="helper-copy">
+                                Il file caricato sostituisce l&apos;URL. Se selezioni "Rimuovi media", la preview viene svuotata.
+                              </p>
                             </form>
                           </AdminDialog>
                         ) : (

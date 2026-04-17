@@ -58,6 +58,7 @@ function formatNotificationTime(value) {
 export default function AdminChrome({
   children,
   handheldMode = false,
+  initialNotificationSummary,
   initialReservationSummary,
   items,
   showPermissions,
@@ -68,12 +69,16 @@ export default function AdminChrome({
   const [isCompactViewport, setIsCompactViewport] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(initialReservationSummary?.pendingCount || 0);
-  const [pendingReservations, setPendingReservations] = useState(
-    initialReservationSummary?.pendingReservations ||
-      initialReservationSummary?.recentReservations ||
-      []
+  const [unreadCount, setUnreadCount] = useState(initialNotificationSummary?.unreadCount || 0);
+  const [recentNotifications, setRecentNotifications] = useState(
+    initialNotificationSummary?.recentNotifications || []
   );
+  const [toastItems, setToastItems] = useState([]);
   const bellShellRef = useRef(null);
+  const previousUnreadCountRef = useRef(initialNotificationSummary?.unreadCount || 0);
+  const knownNotificationIdsRef = useRef(
+    new Set((initialNotificationSummary?.recentNotifications || []).map((item) => item.id))
+  );
   const canWatchReservations = items.some((item) => item.page === "reservations");
 
   useEffect(() => {
@@ -129,7 +134,40 @@ export default function AdminChrome({
     }
 
     setPendingCount(summary.pendingCount || 0);
-    setPendingReservations(summary.pendingReservations || summary.recentReservations || []);
+  });
+
+  const syncNotifications = useEffectEvent((summary) => {
+    if (!summary) {
+      return;
+    }
+
+    const nextUnreadCount = summary.unreadCount || 0;
+    const nextNotifications = summary.recentNotifications || [];
+    const newUnreadNotifications = nextNotifications.filter(
+      (item) => item.unread && !knownNotificationIdsRef.current.has(item.id)
+    );
+
+    nextNotifications.forEach((item) => knownNotificationIdsRef.current.add(item.id));
+    setUnreadCount(nextUnreadCount);
+    setRecentNotifications(nextNotifications);
+
+    if (newUnreadNotifications.length > 0 && nextUnreadCount >= previousUnreadCountRef.current) {
+      setToastItems((current) => [
+        ...newUnreadNotifications.slice(0, 3).map((item) => ({
+          id: item.id,
+          title: item.title,
+          body: item.body,
+          href: item.href
+        })),
+        ...current
+      ].slice(0, 4));
+
+      if (document.visibilityState === "visible") {
+        window.navigator.vibrate?.(80);
+      }
+    }
+
+    previousUnreadCountRef.current = nextUnreadCount;
   });
 
   useEffect(() => {
@@ -183,6 +221,68 @@ export default function AdminChrome({
   }, [canWatchReservations, syncSummary]);
 
   useEffect(() => {
+    let active = true;
+
+    const poll = async () => {
+      try {
+        const response = await fetch("/api/admin/notifications/live", {
+          cache: "no-store"
+        });
+
+        if (!response.ok) {
+          return;
+        }
+
+        const summary = await response.json();
+
+        if (active) {
+          syncNotifications(summary);
+        }
+      } catch {
+        // Ignore transient polling errors.
+      }
+    };
+
+    void poll();
+
+    const intervalId = window.setInterval(() => {
+      if (document.visibilityState === "visible") {
+        void poll();
+      }
+    }, 10000);
+
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        void poll();
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
+  }, [syncNotifications]);
+
+  useEffect(() => {
+    if (toastItems.length === 0) {
+      return undefined;
+    }
+
+    const timers = toastItems.map((toast) =>
+      window.setTimeout(() => {
+        setToastItems((current) => current.filter((item) => item.id !== toast.id));
+      }, 5500)
+    );
+
+    return () => {
+      timers.forEach((timerId) => window.clearTimeout(timerId));
+    };
+  }, [toastItems]);
+
+  useEffect(() => {
     function handleKeyDown(event) {
       if (event.key === "Escape") {
         setBellOpen(false);
@@ -220,6 +320,50 @@ export default function AdminChrome({
   function handleNavigation() {
     if (isCompactViewport) {
       setSidebarHidden(true);
+    }
+  }
+
+  async function markNotificationRead(notificationId) {
+    if (!notificationId) {
+      return;
+    }
+
+    setRecentNotifications((current) =>
+      current.map((item) => (item.id === notificationId ? { ...item, unread: false } : item))
+    );
+    setUnreadCount((current) => Math.max(0, current - 1));
+
+    try {
+      await fetch("/api/admin/notifications/read", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          notificationId
+        })
+      });
+    } catch {
+      // Ignore best-effort read sync failures.
+    }
+  }
+
+  async function markAllNotificationsRead() {
+    setRecentNotifications((current) => current.map((item) => ({ ...item, unread: false })));
+    setUnreadCount(0);
+
+    try {
+      await fetch("/api/admin/notifications/read", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          all: true
+        })
+      });
+    } catch {
+      // Ignore best-effort read sync failures.
     }
   }
 
@@ -287,11 +431,28 @@ export default function AdminChrome({
           </div>
 
           <div className="admin-toolbar-actions">
-            {canWatchReservations ? (
+            <div className="notification-toast-stack" aria-live="polite">
+              {toastItems.map((toast) => (
+                <Link
+                  className="notification-toast"
+                  href={toast.href || "/admin"}
+                  key={toast.id}
+                  onClick={() => {
+                    void markNotificationRead(toast.id);
+                    setToastItems((current) => current.filter((item) => item.id !== toast.id));
+                  }}
+                >
+                  <strong>{toast.title}</strong>
+                  <span>{toast.body}</span>
+                </Link>
+              ))}
+            </div>
+
+            {canWatchReservations || recentNotifications.length > 0 ? (
               <div className="notification-shell" ref={bellShellRef}>
                 <button
                   aria-expanded={bellOpen ? "true" : "false"}
-                  aria-label="Apri prenotazioni da gestire"
+                  aria-label="Apri centro notifiche"
                   className={
                     bellOpen
                       ? "icon-button notification-button active"
@@ -302,9 +463,9 @@ export default function AdminChrome({
                 >
                   <BellIcon />
                   <span
-                    className={pendingCount > 0 ? "notification-badge" : "notification-badge zero"}
+                    className={unreadCount > 0 ? "notification-badge" : "notification-badge zero"}
                   >
-                    {pendingCount}
+                    {unreadCount}
                   </span>
                 </button>
 
@@ -312,40 +473,58 @@ export default function AdminChrome({
                   <div className="notification-panel" role="dialog">
                     <div className="notification-panel-header">
                       <div>
-                        <strong>Prenotazioni da gestire</strong>
-                        <p>{pendingCount} prenotazioni in attesa di gestione</p>
+                        <strong>Centro notifiche</strong>
+                        <p>
+                          {unreadCount} non lette / {pendingCount} prenotazioni in attesa
+                        </p>
                       </div>
-                      <Link href="/admin/prenotazioni" onClick={() => setBellOpen(false)}>
-                        Apri lista
-                      </Link>
+                      <div className="micro-actions">
+                        <button
+                          className="button button-muted"
+                          onClick={() => void markAllNotificationsRead()}
+                          type="button"
+                        >
+                          Segna tutte lette
+                        </button>
+                        <Link href="/admin/registro" onClick={() => setBellOpen(false)}>
+                          Apri registro
+                        </Link>
+                      </div>
                     </div>
 
                     <div className="notification-list">
-                      {pendingReservations.map((reservation) => (
+                      {recentNotifications.map((notification) => (
                         <Link
-                          className="notification-item pending"
-                          href="/admin/prenotazioni"
-                          key={reservation.id}
-                          onClick={() => setBellOpen(false)}
+                          className={
+                            notification.unread
+                              ? "notification-item pending unread"
+                              : "notification-item"
+                          }
+                          href={notification.href || "/admin"}
+                          key={notification.id}
+                          onClick={() => {
+                            void markNotificationRead(notification.id);
+                            setBellOpen(false);
+                          }}
                         >
                           <div className="notification-item-head">
-                            <strong>{reservation.guestName}</strong>
-                            <span className="notification-pill">In attesa</span>
+                            <strong>{notification.title}</strong>
+                            <span className="notification-pill">
+                              {notification.unread ? "Nuova" : "Letta"}
+                            </span>
                           </div>
-                          <p>
-                            {reservation.locationName} - {reservation.guests} ospiti
-                          </p>
+                          <p>{notification.body}</p>
                           <div className="notification-meta">
-                            <span>Arrivo {formatNotificationTime(reservation.dateTime)}</span>
-                            <span>Ricevuta {formatNotificationTime(reservation.createdAt)}</span>
+                            <span>{notification.locationName}</span>
+                            <span>{formatNotificationTime(notification.createdAt)}</span>
                           </div>
                         </Link>
                       ))}
 
-                      {pendingReservations.length === 0 ? (
+                      {recentNotifications.length === 0 ? (
                         <div className="notification-empty">
-                          <strong>Nessuna prenotazione da gestire</strong>
-                          <p>Quando arriva una nuova richiesta in attesa la vedrai qui subito.</p>
+                          <strong>Nessuna notifica</strong>
+                          <p>Le nuove prenotazioni, richieste tavolo e eventi di sala appariranno qui.</p>
                         </div>
                       ) : null}
                     </div>
