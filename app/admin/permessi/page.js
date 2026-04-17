@@ -1,14 +1,18 @@
 import { saveRolePermissionMatrixAction } from "../../../lib/actions/admin-actions";
 import { requireRoles } from "../../../lib/auth";
-import { ADMIN_PAGE_LABELS, DEFAULT_ROLE_PERMISSIONS, ROLE_LABELS } from "../../../lib/constants";
+import {
+  ADMIN_PAGE_LABELS,
+  DEFAULT_ROLE_PERMISSIONS,
+  ROLE_LABELS
+} from "../../../lib/constants";
 import { getRolePermissions } from "../../../lib/permissions";
 
 export const dynamic = "force-dynamic";
 
 const permissionSections = [
   {
-    title: "Visibilità pagine",
-    description: "Quali voci del pannello ogni ruolo può vedere.",
+    title: "Visibilita pagine",
+    description: "Definisce quali viste del pannello ogni ruolo puo consultare.",
     fields: [
       { key: "canViewDashboard", label: ADMIN_PAGE_LABELS.dashboard },
       { key: "canViewLocations", label: ADMIN_PAGE_LABELS.locations },
@@ -22,7 +26,7 @@ const permissionSections = [
   },
   {
     title: "Operazioni consentite",
-    description: "Quali azioni operative e gestionali ogni ruolo può eseguire.",
+    description: "Definisce cosa puo modificare o amministrare ogni ruolo.",
     fields: [
       { key: "canManageLocations", label: "Gestire sedi" },
       { key: "canManageTables", label: "Gestire tavoli e zone" },
@@ -46,6 +50,10 @@ function countEnabled(permission) {
 export default async function PermessiPage() {
   await requireRoles(["ADMIN"]);
   const permissions = await getRolePermissions();
+  const totalControls = permissionSections.reduce(
+    (total, section) => total + section.fields.length,
+    0
+  );
 
   return (
     <div className="page-stack">
@@ -53,16 +61,17 @@ export default async function PermessiPage() {
         <div className="panel-header">
           <div>
             <h2>Permessi per ruolo</h2>
-            <p>
-              Vista unica per Admin. Modifichi tutti i ruoli nello stesso schermo, senza blocchi
-              ripetuti.
-            </p>
+            <p>Matrice tecnica unica: leggi i ruoli in colonna e modifichi tutto nello stesso workspace.</p>
+          </div>
+          <div className="row-meta">
+            <span>{permissions.length} ruoli</span>
+            <span>{totalControls} controlli</span>
           </div>
         </div>
 
-        <div className="permission-role-strip">
+        <div className="permission-summary-strip">
           {permissions.map((permission) => (
-            <div className="summary-chip" key={permission.role}>
+            <div className="permission-summary-cell" key={permission.role}>
               <strong>{ROLE_LABELS[permission.role] || permission.role}</strong>
               <span>{countEnabled(permission)} permessi attivi</span>
             </div>
@@ -71,56 +80,63 @@ export default async function PermessiPage() {
       </section>
 
       <form action={saveRolePermissionMatrixAction} className="entity-form">
-        {permissionSections.map((section) => (
-          <section className="panel-card" key={section.title}>
-            <div className="panel-header">
-              <div>
-                <h2>{section.title}</h2>
-                <p>{section.description}</p>
-              </div>
+        <section className="panel-card permission-workspace">
+          <div className="panel-header">
+            <div>
+              <h2>Matrice permessi</h2>
+              <p>Le sezioni sono separate da righe divisorie, non da blocchi ripetuti.</p>
             </div>
+          </div>
 
-            <div className="permission-matrix-shell">
-              <div className="permission-matrix">
-                <div className="permission-matrix-head permission-matrix-head-label">
-                  Permesso
+          <div className="permission-matrix-shell">
+            <div className="permission-matrix permission-matrix-dense">
+              <div className="permission-matrix-head permission-matrix-head-label">Permesso</div>
+
+              {permissions.map((permission) => (
+                <div className="permission-matrix-head" key={`head-${permission.role}`}>
+                  <strong>{ROLE_LABELS[permission.role] || permission.role}</strong>
                 </div>
+              ))}
 
-                {permissions.map((permission) => (
-                  <div className="permission-matrix-head" key={`${section.title}-${permission.role}`}>
-                    <strong>{ROLE_LABELS[permission.role] || permission.role}</strong>
+              {permissionSections.map((section) => (
+                <div className="permission-section-group" key={section.title}>
+                  <div className="permission-section-row">
+                    <strong>{section.title}</strong>
+                    <span>{section.description}</span>
                   </div>
-                ))}
 
-                {section.fields.map((field) => (
-                  <div className="permission-matrix-row" key={`${section.title}-${field.key}`}>
-                    <div className="permission-matrix-label">{field.label}</div>
+                  {section.fields.map((field) => (
+                    <div className="permission-matrix-row" key={`${section.title}-${field.key}`}>
+                      <div className="permission-matrix-label">{field.label}</div>
 
-                    {permissions.map((permission) => (
-                      <label
-                        className="permission-matrix-cell"
-                        key={`${permission.role}-${field.key}`}
-                      >
-                        <input
-                          defaultChecked={Boolean(permission[field.key])}
-                          name={`${permission.role}__${field.key}`}
-                          type="checkbox"
-                        />
-                        <span className="sr-only">
-                          {field.label} per {ROLE_LABELS[permission.role] || permission.role}
-                        </span>
-                      </label>
-                    ))}
-                  </div>
-                ))}
-              </div>
+                      {permissions.map((permission) => (
+                        <label
+                          className="permission-matrix-cell"
+                          key={`${permission.role}-${field.key}`}
+                        >
+                          <input
+                            defaultChecked={Boolean(permission[field.key])}
+                            name={`${permission.role}__${field.key}`}
+                            type="checkbox"
+                          />
+                          <span className="sr-only">
+                            {field.label} per {ROLE_LABELS[permission.role] || permission.role}
+                          </span>
+                        </label>
+                      ))}
+                    </div>
+                  ))}
+                </div>
+              ))}
             </div>
-          </section>
-        ))}
+          </div>
 
-        <button className="button button-primary" type="submit">
-          Salva matrice permessi
-        </button>
+          <div className="section-submit-bar">
+            <button className="button button-primary" type="submit">
+              Salva matrice permessi
+            </button>
+          </div>
+        </section>
       </form>
     </div>
   );

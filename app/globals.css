@@ -2693,6 +2693,290 @@ textarea {
   min-height: 38px;
 }
 
+.console-overview-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.console-overview-cell {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: #fff;
+}
+
+.console-overview-cell span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.console-workspace-panel {
+  display: grid;
+  grid-template-columns: 280px minmax(0, 1fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.console-side-rail {
+  position: sticky;
+  top: 10px;
+  display: grid;
+  gap: 14px;
+  align-content: start;
+  padding-right: 14px;
+  border-right: 1px solid rgba(19, 35, 30, 0.08);
+}
+
+.console-side-head h2 {
+  margin: 0;
+}
+
+.console-side-head p,
+.console-block-head p,
+.permission-section-row span {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.console-side-summary {
+  display: grid;
+}
+
+.console-side-summary div {
+  display: grid;
+  gap: 4px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(19, 35, 30, 0.08);
+}
+
+.console-side-summary div:first-child {
+  padding-top: 0;
+  border-top: 0;
+}
+
+.console-main-workspace {
+  display: grid;
+  gap: 14px;
+  min-width: 0;
+}
+
+.console-tab-strip {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.console-tab-strip .admin-section-tab {
+  flex: 0 1 auto;
+}
+
+.console-block-grid {
+  display: grid;
+  gap: 12px;
+  align-items: start;
+}
+
+.console-block-grid-split {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.console-block-grid-triple {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.console-block {
+  display: grid;
+  gap: 14px;
+  padding: 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: #fff;
+}
+
+.console-block-head h4 {
+  margin: 0;
+  font-size: 0.98rem;
+}
+
+.console-table-list {
+  display: grid;
+  gap: 8px;
+}
+
+.console-table-head,
+.console-table-row {
+  display: grid;
+  grid-template-columns: 90px minmax(0, 1fr) minmax(160px, 0.95fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.console-table-head {
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.console-table-row {
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: #fff;
+}
+
+.console-table-row a {
+  color: var(--accent);
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.permission-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.permission-summary-cell {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: #fff;
+}
+
+.permission-summary-cell span {
+  color: var(--muted);
+}
+
+.permission-workspace {
+  gap: 14px;
+}
+
+.permission-matrix.permission-matrix-dense {
+  min-width: 920px;
+}
+
+.permission-matrix.permission-matrix-dense .permission-matrix-head {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background: rgba(255, 252, 247, 0.98);
+}
+
+.permission-section-group {
+  display: contents;
+}
+
+.permission-section-row {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-top: 6px;
+  border-radius: 10px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(19, 35, 30, 0.04);
+}
+
+.permission-matrix.permission-matrix-dense .permission-matrix-label,
+.permission-matrix.permission-matrix-dense .permission-matrix-cell {
+  min-height: 50px;
+}
+
+.reservation-list-grid-head {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.25fr) minmax(180px, 1fr) minmax(160px, 0.9fr) minmax(150px, 0.8fr) minmax(130px, 0.7fr);
+  gap: 12px;
+  padding: 0 10px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reservation-list-item {
+  grid-template-columns: minmax(220px, 1.25fr) minmax(180px, 1fr) minmax(160px, 0.9fr) minmax(150px, 0.8fr) minmax(130px, 0.7fr);
+  align-items: center;
+}
+
+.reservation-row-cell {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.reservation-row-cell small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.reservation-list-item.active .reservation-row-cell small {
+  color: rgba(255, 248, 239, 0.76);
+}
+
+.reservation-row-primary strong {
+  font-size: 0.95rem;
+}
+
+.reservation-row-status {
+  justify-items: end;
+}
+
+.reservation-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.reservation-detail-cell {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: #fff;
+}
+
+.reservation-detail-cell span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.reservation-editor-grid,
+.reservation-info-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.reservation-info-grid div {
+  display: grid;
+  gap: 4px;
+  padding: 12px 14px;
+  border-radius: 10px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.reservation-info-grid span {
+  color: var(--muted);
+}
+
 @media (max-width: 1120px) {
   .booking-grid,
   .feature-grid,
@@ -2720,6 +3004,38 @@ textarea {
 
   .menu-catalog-panel {
     position: static;
+  }
+
+  .console-overview-strip,
+  .permission-summary-strip,
+  .console-block-grid-split,
+  .console-block-grid-triple,
+  .reservation-detail-grid,
+  .reservation-editor-grid,
+  .reservation-info-grid,
+  .reservation-list-item,
+  .reservation-list-grid-head {
+    grid-template-columns: 1fr;
+  }
+
+  .console-workspace-panel {
+    grid-template-columns: 1fr;
+  }
+
+  .console-side-rail {
+    position: static;
+    padding-right: 0;
+    padding-bottom: 14px;
+    border-right: 0;
+    border-bottom: 1px solid rgba(19, 35, 30, 0.08);
+  }
+
+  .reservation-list-grid-head {
+    display: none;
+  }
+
+  .reservation-row-status {
+    justify-items: start;
   }
 
   .user-list-head {
@@ -2833,6 +3149,14 @@ textarea {
   }
 
   .menu-item-row {
+    grid-template-columns: 1fr;
+  }
+
+  .console-table-head {
+    display: none;
+  }
+
+  .console-table-row {
     grid-template-columns: 1fr;
   }
 

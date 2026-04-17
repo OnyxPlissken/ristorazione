@@ -68,25 +68,38 @@ function statusTone(status) {
 }
 
 function ReservationListItem({ active, onSelect, reservation }) {
+  const assignedTableLabel = reservation.assignedTableCodes?.length
+    ? reservation.assignedTableCodes.join(" + ")
+    : "Auto";
+  const contactLabel = reservation.guestEmail || reservation.guestPhone || "Nessun contatto";
+
   return (
     <button
       className={active ? "reservation-list-item active" : "reservation-list-item"}
       onClick={onSelect}
       type="button"
     >
-      <div className="reservation-list-item-head">
+      <span className="reservation-row-cell reservation-row-primary">
         <strong>{reservation.guestName}</strong>
+        <small>{contactLabel}</small>
+      </span>
+      <span className="reservation-row-cell">
+        <strong>{formatDateTime(reservation.dateTime)}</strong>
+        <small>{RESERVATION_SOURCE_LABELS[reservation.source] || reservation.source}</small>
+      </span>
+      <span className="reservation-row-cell">
+        <strong>{reservation.locationName}</strong>
+        <small>{reservation.guests} coperti</small>
+      </span>
+      <span className="reservation-row-cell">
+        <strong>{assignedTableLabel}</strong>
+        <small>{reservation.notes ? "Con note" : "Nessuna nota"}</small>
+      </span>
+      <span className="reservation-row-cell reservation-row-status">
         <span className={`table-status-chip ${statusTone(reservation.status)}`}>
           {RESERVATION_STATUS_LABELS[reservation.status] || reservation.status}
         </span>
-      </div>
-      <p>
-        {reservation.locationName} - {formatDateTime(reservation.dateTime)}
-      </p>
-      <div className="reservation-list-item-meta">
-        <span>{reservation.guests} ospiti</span>
-        <span>{reservation.assignedTableCodes?.join(" + ") || "Auto"}</span>
-      </div>
+      </span>
     </button>
   );
 }
@@ -106,6 +119,10 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
     );
   }
 
+  const assignedTableLabel = reservation.assignedTableCodes?.length
+    ? reservation.assignedTableCodes.join(" + ")
+    : reservation.table?.code || "Assegnazione automatica";
+
   return (
     <section className="section-card reservation-detail-panel">
       <form action={action} className="entity-form">
@@ -123,26 +140,34 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
             </span>
           </div>
 
-          <div className="reservation-detail-summary">
-            <div className="summary-chip">
+          <div className="reservation-detail-grid">
+            <div className="reservation-detail-cell">
+              <span>Coperti</span>
               <strong>{reservation.guests}</strong>
-              <span>ospiti</span>
             </div>
-            <div className="summary-chip">
-              <strong>
-                {reservation.assignedTableCodes?.length
-                  ? reservation.assignedTableCodes.join(" + ")
-                  : "Auto"}
-              </strong>
-              <span>tavolo</span>
+            <div className="reservation-detail-cell">
+              <span>Tavolo</span>
+              <strong>{assignedTableLabel}</strong>
             </div>
-            <div className="summary-chip">
+            <div className="reservation-detail-cell">
+              <span>Origine</span>
               <strong>{RESERVATION_SOURCE_LABELS[reservation.source] || reservation.source}</strong>
-              <span>origine</span>
+            </div>
+            <div className="reservation-detail-cell">
+              <span>Email</span>
+              <strong>{reservation.guestEmail || "Non disponibile"}</strong>
+            </div>
+            <div className="reservation-detail-cell">
+              <span>Telefono</span>
+              <strong>{reservation.guestPhone || "Non disponibile"}</strong>
+            </div>
+            <div className="reservation-detail-cell">
+              <span>Link gestione</span>
+              <strong>{reservation.manageToken ? "Disponibile" : "Non generato"}</strong>
             </div>
           </div>
 
-          <div className="form-grid">
+          <div className="reservation-editor-grid">
             <label>
               <span>Stato</span>
               <select defaultValue={reservation.status} name="status">
@@ -164,14 +189,6 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
                 ))}
               </select>
             </label>
-            <label>
-              <span>Email</span>
-              <input defaultValue={reservation.guestEmail || ""} disabled type="text" />
-            </label>
-            <label>
-              <span>Telefono</span>
-              <input defaultValue={reservation.guestPhone || ""} disabled type="text" />
-            </label>
           </div>
 
           {reservation.notes ? (
@@ -181,14 +198,14 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
             </div>
           ) : null}
 
-          <div className="info-list">
+          <div className="reservation-info-grid">
             <div>
               <strong>Creata il</strong>
               <span>{formatDateTime(reservation.createdAt)}</span>
             </div>
             <div>
-              <strong>Link gestione</strong>
-              <span>{reservation.manageToken ? "Disponibile" : "Non generato"}</span>
+              <strong>Riepilogo assegnazione</strong>
+              <span>{assignedTableLabel}</span>
             </div>
           </div>
 
@@ -197,11 +214,9 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
 
           <div className="entity-footer">
             <span>
-              {reservation.assignedTableCodes?.length
-                ? `Assegnato a ${reservation.assignedTableCodes.join(" + ")}`
-                : reservation.table
-                  ? `Assegnato a ${reservation.table.code}`
-                  : "Nessun tavolo assegnato"}
+              {canManageReservations
+                ? "Le modifiche vengono applicate subito al record selezionato."
+                : "Il tuo profilo puo consultare ma non modificare la prenotazione."}
             </span>
             <button className="button button-primary" type="submit">
               {pending ? "Aggiornamento..." : "Aggiorna prenotazione"}
@@ -262,7 +277,7 @@ export default function AdminReservationsPanel({
       <div className="panel-header">
         <div>
           <h2>Gestione prenotazioni</h2>
-          <p>Lista compatta a sinistra, dettaglio operativo a destra, con filtri sempre visibili.</p>
+          <p>Lista operativa in formato tabellare a sinistra, inspector tecnico a destra.</p>
         </div>
         <div className="row-meta">
           <span>{filteredReservations.length} risultati</span>
@@ -280,7 +295,7 @@ export default function AdminReservationsPanel({
                 setQuery(value);
               });
             }}
-            placeholder="Cerca per nome, email o telefono"
+            placeholder="Cerca per nome, email, telefono o tavolo"
             type="search"
             value={query}
           />
@@ -302,9 +317,7 @@ export default function AdminReservationsPanel({
               }}
               type="button"
             >
-              <strong>
-                {status === "ALL" ? "Tutte" : RESERVATION_STATUS_LABELS[status]}
-              </strong>
+              <strong>{status === "ALL" ? "Tutte" : RESERVATION_STATUS_LABELS[status]}</strong>
               <span>{counts[status] || 0}</span>
             </button>
           ))}
@@ -313,9 +326,12 @@ export default function AdminReservationsPanel({
 
       <div className="reservation-workspace">
         <div className="reservation-list-shell">
-          <div className="reservation-list-head">
-            <strong>Prenotazioni</strong>
-            <span>{filteredReservations.length} elementi</span>
+          <div className="reservation-list-head reservation-list-grid-head">
+            <span>Cliente</span>
+            <span>Arrivo</span>
+            <span>Sede</span>
+            <span>Tavolo</span>
+            <span>Stato</span>
           </div>
 
           <div className="reservation-list">
