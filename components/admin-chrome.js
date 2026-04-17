@@ -214,9 +214,10 @@ export default function AdminChrome({
               <SidebarToggleIcon hidden={sidebarHidden} />
             </button>
 
-            <div>
-              <div className="eyebrow">Pannello amministrativo</div>
-              <h1>Gestione operativa</h1>
+            <div className="admin-topbar-copy">
+              <div className="eyebrow">Backoffice tecnico</div>
+              <h1>Amministrazione Coperto</h1>
+              <p>Gestione operativa, configurazione e controllo sedi.</p>
             </div>
           </div>
 
@@ -294,7 +295,7 @@ export default function AdminChrome({
           </div>
         </header>
 
-        {children}
+        <main className="admin-page-main">{children}</main>
       </div>
     </div>
   );

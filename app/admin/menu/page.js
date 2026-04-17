@@ -109,7 +109,7 @@ export default async function MenuPage({ searchParams }) {
         <div className="panel-header">
           <div>
             <h2>Gestione menu</h2>
-            <p>Lavora direttamente sul menu: la sede resta un attributo del menu e non uno step separato.</p>
+            <p>Catalogo menu a sinistra, workspace operativo a destra.</p>
             <p className="menu-location-meta">
               {flattenedMenus.length} menu su {locations.length} sedi / {totalSections} sezioni / {totalItems} piatti
             </p>
@@ -167,29 +167,46 @@ export default async function MenuPage({ searchParams }) {
         </div>
 
         {flattenedMenus.length ? (
-          <>
-            <div className="menu-tab-list">
-              {flattenedMenus.map((menu) => {
-                const itemCount = countMenuItems(menu);
+          <div className="menu-page-layout">
+            <aside className="section-card menu-catalog-panel">
+              <div className="panel-header">
+                <div>
+                  <h2>Catalogo menu</h2>
+                  <p>Seleziona un menu e lavora nel pannello principale.</p>
+                </div>
+                <div className="row-meta">
+                  <span>{flattenedMenus.length} menu</span>
+                </div>
+              </div>
 
-                return (
-                  <Link
-                    className={menu.id === selectedMenu?.id ? "menu-tab active" : "menu-tab"}
-                    href={getMenuHref(menu.id)}
-                    key={menu.id}
-                  >
-                    <small className="menu-tab-eyebrow">
-                      {menu.appliesToAllLocations ? "Tutte le sedi" : menu.locationSummary}
-                    </small>
-                    <strong>{menu.name}</strong>
-                    <span>{menu.description || "Nessuna descrizione"}</span>
-                    <small>
-                      {menu.sections.length} sezioni / {itemCount} piatti / {menu.isActive ? "Attivo" : "Non attivo"}
-                    </small>
-                  </Link>
-                );
-              })}
-            </div>
+              <div className="menu-tab-list">
+                {flattenedMenus.map((menu) => {
+                  const itemCount = countMenuItems(menu);
+
+                  return (
+                    <Link
+                      className={menu.id === selectedMenu?.id ? "menu-tab active" : "menu-tab"}
+                      href={getMenuHref(menu.id)}
+                      key={menu.id}
+                    >
+                      <div className="menu-tab-main">
+                        <strong>{menu.name}</strong>
+                        <span>{menu.description || "Nessuna descrizione"}</span>
+                      </div>
+
+                      <div className="menu-tab-meta">
+                        <small className="menu-tab-eyebrow">
+                          {menu.appliesToAllLocations ? "Tutte le sedi" : menu.locationSummary}
+                        </small>
+                        <small>
+                          {menu.sections.length} sezioni / {itemCount} piatti
+                        </small>
+                      </div>
+                    </Link>
+                  );
+                })}
+              </div>
+            </aside>
 
             {selectedMenu ? (
               <MenuWorkspacePanel
@@ -199,7 +216,7 @@ export default async function MenuPage({ searchParams }) {
                 selectedMenu={selectedMenu}
               />
             ) : null}
-          </>
+          </div>
         ) : (
           <section className="section-card">
             <div className="panel-header">
