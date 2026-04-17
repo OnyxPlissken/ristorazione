@@ -735,6 +735,10 @@ button {
   align-items: start;
 }
 
+.booking-grid .location-stack {
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+}
+
 .location-stack,
 .entity-list,
 .section-stack {
@@ -2104,6 +2108,11 @@ textarea {
   grid-template-columns: 0 minmax(0, 1fr);
 }
 
+.admin-sidebar-backdrop,
+.admin-handheld-nav-wrap {
+  display: none;
+}
+
 .admin-sidebar-wrap {
   position: sticky;
   top: 12px;
@@ -2188,6 +2197,42 @@ textarea {
 .sidebar-link.active {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.08);
+  color: var(--text-inverse);
+}
+
+.handheld-nav {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  padding: 8px;
+  border-radius: 16px;
+  background: rgba(19, 35, 30, 0.98);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 24px rgba(33, 24, 10, 0.18);
+  scrollbar-width: none;
+}
+
+.handheld-nav::-webkit-scrollbar {
+  display: none;
+}
+
+.handheld-nav-link {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  min-width: max-content;
+  padding: 0 14px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  color: rgba(255, 248, 239, 0.78);
+  white-space: nowrap;
+}
+
+.handheld-nav-link.active {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(255, 255, 255, 0.1);
   color: var(--text-inverse);
 }
 
@@ -2446,6 +2491,20 @@ textarea {
 .admin-page-main {
   display: grid;
   gap: 14px;
+}
+
+.admin-shell.handheld-mode .admin-topbar .eyebrow {
+  display: none;
+}
+
+.admin-shell.handheld-mode .admin-topbar-copy p {
+  display: none;
+}
+
+.admin-shell.handheld-mode .admin-content .panel-card,
+.admin-shell.handheld-mode .admin-content .section-card,
+.admin-shell.handheld-mode .admin-content .auth-card {
+  border-radius: 14px;
 }
 
 .admin-content .panel-card,
@@ -2858,6 +2917,11 @@ textarea {
   color: var(--muted);
 }
 
+.permission-summary-cell small {
+  color: var(--muted);
+  font-size: 0.74rem;
+}
+
 .permission-workspace {
   gap: 14px;
 }
@@ -3136,7 +3200,7 @@ textarea {
   color: var(--muted);
 }
 
-@media (max-width: 1120px) {
+@media (max-width: 1180px) {
   .booking-grid,
   .feature-grid,
   .form-grid,
@@ -3157,7 +3221,17 @@ textarea {
     grid-template-columns: 1fr;
   }
 
+  .booking-shell,
+  .marketing-shell,
+  .admin-shell {
+    width: min(100% - 18px, 1680px);
+  }
+
   .menu-page-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .booking-grid .location-stack {
     grid-template-columns: 1fr;
   }
 
@@ -3194,6 +3268,35 @@ textarea {
     display: none;
   }
 
+  .page-stack,
+  .admin-page-main {
+    gap: 16px;
+  }
+
+  .panel-card,
+  .section-card,
+  .feature-card,
+  .auth-card {
+    padding: 18px;
+    border-radius: 18px;
+  }
+
+  .admin-topbar {
+    padding: 12px 14px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+  }
+
+  .admin-toolbar-left,
+  .admin-toolbar-actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .admin-toolbar-actions {
+    justify-content: space-between;
+  }
+
   .reservation-row-status {
     justify-items: start;
   }
@@ -3221,6 +3324,8 @@ textarea {
   .admin-shell,
   .admin-shell.sidebar-hidden {
     grid-template-columns: 1fr;
+    gap: 0;
+    padding-top: 12px;
   }
 
   .reservation-workspace {
@@ -3231,17 +3336,84 @@ textarea {
     position: static;
   }
 
-  .admin-sidebar-wrap {
-    position: static;
-    height: auto;
+  .admin-sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 64;
+    border: 0;
+    padding: 0;
+    background: rgba(19, 35, 30, 0.18);
+    backdrop-filter: blur(4px);
   }
 
-  .admin-shell.sidebar-hidden .admin-sidebar-wrap {
+  .admin-shell.sidebar-hidden .admin-sidebar-backdrop {
     display: none;
   }
 
+  .admin-sidebar-wrap {
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: 65;
+    width: min(320px, calc(100vw - 20px));
+    height: 100vh;
+    padding: 12px;
+    pointer-events: none;
+  }
+
+  .admin-sidebar {
+    height: calc(100vh - 24px);
+    overflow-y: auto;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+
   .admin-shell.sidebar-hidden .admin-sidebar {
-    transform: none;
+    transform: translateX(-112%);
+  }
+
+  .modal-shell {
+    width: min(980px, calc(100vw - 20px));
+    min-height: calc(100vh - 20px);
+    padding: 20px 20px 24px;
+    border-radius: 24px;
+  }
+
+  .modal-header {
+    top: 8px;
+    margin: -20px -20px 0;
+    padding: 20px 20px 16px;
+  }
+
+  .admin-shell.handheld-mode .admin-page-main {
+    padding-bottom: 94px;
+  }
+
+  .admin-shell.handheld-mode .admin-handheld-nav-wrap {
+    display: block;
+    position: fixed;
+    left: 50%;
+    bottom: 12px;
+    z-index: 63;
+    width: min(calc(100vw - 20px), 1080px);
+    transform: translateX(-50%);
+  }
+
+  .admin-shell.handheld-mode .button,
+  .admin-shell.handheld-mode .icon-button,
+  .admin-shell.handheld-mode .sidebar-link,
+  .admin-shell.handheld-mode .status-filter-button {
+    min-height: 48px;
+  }
+
+  .admin-shell.handheld-mode .admin-topbar-copy h1 {
+    font-size: 1.08rem;
+  }
+
+  .admin-shell.handheld-mode .admin-content .panel-card,
+  .admin-shell.handheld-mode .admin-content .section-card {
+    padding: 16px;
   }
 }
 
@@ -3277,6 +3449,15 @@ textarea {
   .table-card-grid,
   .stats-grid {
     grid-template-columns: 1fr;
+  }
+
+  .cta-row {
+    width: 100%;
+  }
+
+  .cta-row .button,
+  .admin-toolbar-actions .button {
+    width: 100%;
   }
 
   .admin-shell {
@@ -3367,5 +3548,29 @@ textarea {
   .reservation-list-head {
     flex-direction: column;
     align-items: flex-start;
+  }
+
+  .admin-sidebar-wrap {
+    width: min(340px, calc(100vw - 12px));
+    padding: 6px;
+  }
+
+  .admin-sidebar {
+    height: calc(100vh - 12px);
+  }
+
+  .admin-shell.handheld-mode .admin-handheld-nav-wrap {
+    bottom: 8px;
+    width: calc(100vw - 16px);
+  }
+
+  .handheld-nav {
+    border-radius: 14px;
+  }
+
+  .handheld-nav-link {
+    min-height: 44px;
+    padding: 0 12px;
+    font-size: 0.88rem;
   }
 }

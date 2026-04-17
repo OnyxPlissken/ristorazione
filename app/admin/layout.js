@@ -43,6 +43,7 @@ export default async function AdminLayout({ children }) {
 
   return (
     <AdminChrome
+      handheldMode={Boolean(user.rolePermission?.useHandheldMode)}
       initialReservationSummary={reservationSummary}
       items={items}
       showPermissions={user.role === "ADMIN"}

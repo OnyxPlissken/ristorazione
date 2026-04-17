@@ -136,6 +136,7 @@ model RolePermission {
   canManageUsers         Boolean   @default(false)
   canViewConsoleAdmin    Boolean   @default(false)
   canManageConsoleAdmin  Boolean   @default(false)
+  useHandheldMode        Boolean   @default(false)
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
 }

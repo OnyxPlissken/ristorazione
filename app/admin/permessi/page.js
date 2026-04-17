@@ -37,12 +37,17 @@ const permissionSections = [
       { key: "canManageUsers", label: "Gestire utenti" },
       { key: "canManageConsoleAdmin", label: "Gestire console tecnica" }
     ]
+  },
+  {
+    title: "Esperienza interfaccia",
+    description: "Permette di forzare un workspace touch ottimizzato per smartphone, tablet o palmari.",
+    fields: [{ key: "useHandheldMode", label: "Usa modalita palmare" }]
   }
 ];
 
 function countEnabled(permission) {
   return Object.keys(DEFAULT_ROLE_PERMISSIONS[permission.role]).reduce(
-    (total, key) => total + (permission[key] ? 1 : 0),
+    (total, key) => total + (key.startsWith("can") && permission[key] ? 1 : 0),
     0
   );
 }
@@ -74,6 +79,7 @@ export default async function PermessiPage() {
             <div className="permission-summary-cell" key={permission.role}>
               <strong>{ROLE_LABELS[permission.role] || permission.role}</strong>
               <span>{countEnabled(permission)} permessi attivi</span>
+              <small>{permission.useHandheldMode ? "Modalita palmare" : "Modalita tecnica"}</small>
             </div>
           ))}
         </div>

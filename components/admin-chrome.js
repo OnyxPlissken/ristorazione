@@ -57,13 +57,15 @@ function formatNotificationTime(value) {
 
 export default function AdminChrome({
   children,
+  handheldMode = false,
   initialReservationSummary,
   items,
   showPermissions,
   userName,
   userRoleLabel
 }) {
-  const [sidebarHidden, setSidebarHidden] = useState(false);
+  const [sidebarHidden, setSidebarHidden] = useState(true);
+  const [isCompactViewport, setIsCompactViewport] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(initialReservationSummary?.pendingCount || 0);
   const [pendingReservations, setPendingReservations] = useState(
@@ -75,13 +77,51 @@ export default function AdminChrome({
   const canWatchReservations = items.some((item) => item.page === "reservations");
 
   useEffect(() => {
-    const storedValue = window.localStorage.getItem("coperto-admin-sidebar-hidden");
-    setSidebarHidden(storedValue === "1");
+    const mediaQuery = window.matchMedia("(max-width: 1180px)");
+    const syncViewport = () => {
+      const compact = mediaQuery.matches;
+      setIsCompactViewport(compact);
+
+      if (compact) {
+        setSidebarHidden(true);
+        return;
+      }
+
+      const storedValue = window.localStorage.getItem("coperto-admin-sidebar-hidden");
+      setSidebarHidden(storedValue === "1");
+    };
+
+    syncViewport();
+
+    if (typeof mediaQuery.addEventListener === "function") {
+      mediaQuery.addEventListener("change", syncViewport);
+      return () => mediaQuery.removeEventListener("change", syncViewport);
+    }
+
+    mediaQuery.addListener(syncViewport);
+    return () => mediaQuery.removeListener(syncViewport);
   }, []);
 
   useEffect(() => {
+    if (isCompactViewport) {
+      return;
+    }
+
     window.localStorage.setItem("coperto-admin-sidebar-hidden", sidebarHidden ? "1" : "0");
-  }, [sidebarHidden]);
+  }, [isCompactViewport, sidebarHidden]);
+
+  useEffect(() => {
+    if (!isCompactViewport || sidebarHidden) {
+      return undefined;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isCompactViewport, sidebarHidden]);
 
   const syncSummary = useEffectEvent((summary) => {
     if (!summary) {
@@ -168,8 +208,32 @@ export default function AdminChrome({
     };
   }, [bellOpen]);
 
+  const shellClassName = [
+    "admin-shell",
+    sidebarHidden ? "sidebar-hidden" : "",
+    isCompactViewport ? "compact-viewport" : "",
+    handheldMode ? "handheld-mode" : ""
+  ]
+    .filter(Boolean)
+    .join(" ");
+
+  function handleNavigation() {
+    if (isCompactViewport) {
+      setSidebarHidden(true);
+    }
+  }
+
   return (
-    <div className={sidebarHidden ? "admin-shell sidebar-hidden" : "admin-shell"}>
+    <div className={shellClassName}>
+      {isCompactViewport && !sidebarHidden ? (
+        <button
+          aria-label="Chiudi menu laterale"
+          className="admin-sidebar-backdrop"
+          onClick={() => setSidebarHidden(true)}
+          type="button"
+        />
+      ) : null}
+
       <div className="admin-sidebar-wrap">
         <aside className="admin-sidebar" id="admin-menu">
           <div className="admin-sidebar-header">
@@ -183,6 +247,7 @@ export default function AdminChrome({
 
           <AdminSidebarNav
             items={items}
+            onNavigate={handleNavigation}
             pendingCount={pendingCount}
             showPermissions={showPermissions}
           />
@@ -296,6 +361,18 @@ export default function AdminChrome({
         </header>
 
         <main className="admin-page-main">{children}</main>
+
+        {handheldMode ? (
+          <div className="admin-handheld-nav-wrap">
+            <AdminSidebarNav
+              items={items}
+              onNavigate={handleNavigation}
+              pendingCount={pendingCount}
+              showPermissions={showPermissions}
+              variant="handheld"
+            />
+          </div>
+        ) : null}
       </div>
     </div>
   );

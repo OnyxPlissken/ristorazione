@@ -39,14 +39,46 @@ function groupItems(items, showPermissions) {
   return [...grouped.entries()];
 }
 
+function flattenItems(items, showPermissions) {
+  return groupItems(items, showPermissions).flatMap(([, sectionItems]) => sectionItems);
+}
+
 export default function AdminSidebarNav({
   items,
   onNavigate,
   pendingCount = 0,
-  showPermissions
+  showPermissions,
+  variant = "sidebar"
 }) {
   const pathname = usePathname();
   const groupedItems = groupItems(items, showPermissions);
+
+  if (variant === "handheld") {
+    const flatItems = flattenItems(items, showPermissions);
+
+    return (
+      <nav aria-label="Navigazione palmare" className="handheld-nav">
+        {flatItems.map((item) => {
+          const isReservations = item.href === "/admin/prenotazioni";
+          const active = isActivePath(pathname, item.href);
+
+          return (
+            <Link
+              className={active ? "handheld-nav-link active" : "handheld-nav-link"}
+              href={item.href}
+              key={`handheld-${item.href}`}
+              onClick={onNavigate}
+            >
+              <span>{item.label}</span>
+              {isReservations && pendingCount > 0 ? (
+                <span className="nav-badge">{pendingCount}</span>
+              ) : null}
+            </Link>
+          );
+        })}
+      </nav>
+    );
+  }
 
   return (
     <nav className="sidebar-nav">

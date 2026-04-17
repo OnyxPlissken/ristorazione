@@ -19,7 +19,8 @@ const defaultRolePermissions = {
     canViewUsers: true,
     canManageUsers: true,
     canViewConsoleAdmin: true,
-    canManageConsoleAdmin: true
+    canManageConsoleAdmin: true,
+    useHandheldMode: false
   },
   PROPRIETARIO: {
     canViewDashboard: true,
@@ -37,7 +38,8 @@ const defaultRolePermissions = {
     canViewUsers: true,
     canManageUsers: true,
     canViewConsoleAdmin: false,
-    canManageConsoleAdmin: false
+    canManageConsoleAdmin: false,
+    useHandheldMode: false
   },
   STORE_MANAGER: {
     canViewDashboard: true,
@@ -55,7 +57,8 @@ const defaultRolePermissions = {
     canViewUsers: false,
     canManageUsers: false,
     canViewConsoleAdmin: false,
-    canManageConsoleAdmin: false
+    canManageConsoleAdmin: false,
+    useHandheldMode: false
   },
   STAFF: {
     canViewDashboard: true,
@@ -73,7 +76,8 @@ const defaultRolePermissions = {
     canViewUsers: false,
     canManageUsers: false,
     canViewConsoleAdmin: false,
-    canManageConsoleAdmin: false
+    canManageConsoleAdmin: false,
+    useHandheldMode: false
   }
 };
 const defaultZones = [
