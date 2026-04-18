@@ -1,15 +1,43 @@
+import Link from "next/link";
 import { requireUser } from "../../../lib/auth";
+import { summarizeLocationModules } from "../../../lib/location-modules";
 import { getDateKey } from "../../../lib/reservations";
 import { requirePageAccess } from "../../../lib/permissions";
 import { formatDateTime } from "../../../lib/format";
 import { RESERVATION_STATUS_LABELS } from "../../../lib/constants";
-import { getReservationCalendarPageData } from "../../../lib/queries";
+import {
+  getAccessibleLocationModules,
+  getReservationCalendarPageData
+} from "../../../lib/queries";
 
 export const dynamic = "force-dynamic";
 
 export default async function CalendarioPage({ searchParams }) {
   const user = await requireUser();
   requirePageAccess(user, "reservations");
+  const moduleSummary = summarizeLocationModules(await getAccessibleLocationModules(user));
+
+  if (!moduleSummary.has("reservations")) {
+    return (
+      <div className="page-stack">
+        <section className="panel-card">
+          <div className="panel-header">
+            <div>
+              <h2>Calendario prenotazioni non disponibile</h2>
+              <p>
+                Il modulo prenotazioni online e' disattivo su tutte le sedi accessibili a questo profilo.
+                Riattivalo da Console Admin per usare timeline, slot e arrivi per data.
+              </p>
+            </div>
+            <Link className="button button-primary" href="/admin/console">
+              Apri Console Admin
+            </Link>
+          </div>
+        </section>
+      </div>
+    );
+  }
+
   const params = await searchParams;
   const locationId = String(params?.locationId || "");
   const dateText = String(params?.date || getDateKey(new Date()));

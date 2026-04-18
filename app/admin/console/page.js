@@ -1,6 +1,11 @@
 import Link from "next/link";
 import { requireUser } from "../../../lib/auth";
 import { saveAdminConsoleLocationAction } from "../../../lib/actions/admin-actions";
+import {
+  LOCATION_MODULE_DEFINITIONS,
+  getEnabledLocationModules,
+  isLocationModuleEnabled
+} from "../../../lib/location-modules";
 import { RESERVATION_STATUS_LABELS } from "../../../lib/constants";
 import { canAccessPage, requirePageAccess } from "../../../lib/permissions";
 import { getAdminConsoleLocations } from "../../../lib/queries";
@@ -101,99 +106,12 @@ const consolePanels = {
   ]
 };
 
-const moduleDefinitions = [
-  {
-    field: "reservationEnabled",
-    title: "Prenotazioni online",
-    description: "Pagina prenota, booking diretto e flusso amministrativo.",
-    cluster: "Booking"
-  },
-  {
-    field: "slotOptimizationEnabled",
-    title: "Ottimizzazione slot",
-    description: "Suggerimenti orari e pressione operativa per saturare meglio i tavoli.",
-    cluster: "Booking"
-  },
-  {
-    field: "smartWaitlistEnabled",
-    title: "Waitlist intelligente",
-    description: "Ordina la coda per priorita e riempie piu velocemente i buchi.",
-    cluster: "Booking"
-  },
-  {
-    field: "customerScoringEnabled",
-    title: "CRM scoring",
-    description: "Segmentazione parlante cliente, priorita e affidabilita.",
-    cluster: "CRM"
-  },
-  {
-    field: "adaptiveDepositEnabled",
-    title: "Deposito adattivo",
-    description: "Richiede o consiglia garanzie sui profili piu rischiosi.",
-    cluster: "CRM"
-  },
-  {
-    field: "qrEnabled",
-    title: "QR tavolo",
-    description: "Menu, carrello e conto dal tavolo via smartphone.",
-    cluster: "Sala"
-  },
-  {
-    field: "customerTableSelectionEnabled",
-    title: "Scelta tavolo cliente",
-    description: "Consente al cliente di scegliere il tavolo dalla planimetria.",
-    cluster: "Sala"
-  },
-  {
-    field: "paymentsEnabled",
-    title: "Pagamenti tavolo",
-    description: "Richiesta conto, checkout esterno e pagamento diretto.",
-    cluster: "Sala"
-  },
-  {
-    field: "deliveryEnabled",
-    title: "Delivery",
-    description: "Canali delivery, API partner e ordini centralizzati.",
-    cluster: "Canali"
-  },
-  {
-    field: "googleBusinessEnabled",
-    title: "Google Business",
-    description: "Dati tecnici e sincronizzazione con la scheda pubblica.",
-    cluster: "Canali"
-  },
-  {
-    field: "smsEnabled",
-    title: "SMS automatici",
-    description: "Invio messaggi 1s2u per stati prenotazione, link e waitlist.",
-    cluster: "Canali"
-  }
-];
-
 function featureSummary(technical, location) {
-  return moduleDefinitions
-    .filter((definition) => isModuleEnabled(definition.field, technical, location))
+  return getEnabledLocationModules({
+    ...location,
+    technicalSettings: technical
+  })
     .map((definition) => definition.title);
-}
-
-function isModuleEnabled(field, technical, location) {
-  if (field === "reservationEnabled") {
-    return technical.reservationsEnabled ?? location.reservationEnabled;
-  }
-
-  if (field === "slotOptimizationEnabled") {
-    return technical.slotOptimizationEnabled !== false;
-  }
-
-  if (field === "smartWaitlistEnabled") {
-    return technical.smartWaitlistEnabled !== false;
-  }
-
-  if (field === "customerScoringEnabled") {
-    return technical.customerScoringEnabled !== false;
-  }
-
-  return Boolean(technical[field]);
 }
 
 function hrefFor(locationId, section, panel) {
@@ -224,7 +142,7 @@ function ConsoleModuleCard({
   location,
   technical
 }) {
-  const isEnabled = isModuleEnabled(definition.field, technical, location);
+  const isEnabled = isLocationModuleEnabled(definition.key, technical, location);
 
   return (
     <label className={isEnabled ? "console-module-card active" : "console-module-card"}>
@@ -282,7 +200,7 @@ export default async function ConsoleAdminPage({ searchParams }) {
 
   const technical = selectedLocation.technicalSettings || {};
   const flags = featureSummary(technical, selectedLocation);
-  const moduleGroups = moduleDefinitions.reduce((groups, definition) => {
+  const moduleGroups = LOCATION_MODULE_DEFINITIONS.reduce((groups, definition) => {
     const cluster = definition.cluster;
     if (!groups.has(cluster)) {
       groups.set(cluster, []);
@@ -516,7 +434,11 @@ export default async function ConsoleAdminPage({ searchParams }) {
                       <div className="console-module-grid">
                         {definitions.map((definition) => (
                           <ConsoleModuleCard
-                            checked={isModuleEnabled(definition.field, technical, selectedLocation)}
+                            checked={isLocationModuleEnabled(
+                              definition.key,
+                              technical,
+                              selectedLocation
+                            )}
                             definition={definition}
                             disabled={!canManageConsole}
                             key={definition.field}

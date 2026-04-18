@@ -1,8 +1,12 @@
 import AdminChrome from "../../components/admin-chrome";
 import { getAdminNotificationSummary } from "../../lib/admin-notifications";
 import { requireUser, roleLabel } from "../../lib/auth";
+import { summarizeLocationModules } from "../../lib/location-modules";
 import { canAccessPage } from "../../lib/permissions";
-import { getAdminReservationLiveSummary } from "../../lib/queries";
+import {
+  getAccessibleLocationModules,
+  getAdminReservationLiveSummary
+} from "../../lib/queries";
 
 export const dynamic = "force-dynamic";
 
@@ -29,7 +33,8 @@ const navigation = [
     page: "reservations",
     section: "Operativita",
     sectionDescription: "Monitoraggio servizio, prenotazioni e performance.",
-    subsection: "Servizio"
+    subsection: "Servizio",
+    moduleKey: "reservations"
   },
   {
     href: "/admin/calendario",
@@ -37,7 +42,8 @@ const navigation = [
     page: "reservations",
     section: "Operativita",
     sectionDescription: "Monitoraggio servizio, prenotazioni e performance.",
-    subsection: "Servizio"
+    subsection: "Servizio",
+    moduleKey: "reservations"
   },
   {
     href: "/admin/clienti",
@@ -45,7 +51,8 @@ const navigation = [
     page: "reservations",
     section: "Operativita",
     sectionDescription: "Monitoraggio servizio, prenotazioni e performance.",
-    subsection: "Clienti"
+    subsection: "Clienti",
+    moduleKey: "customerScoring"
   },
   {
     href: "/admin/analytics",
@@ -53,7 +60,8 @@ const navigation = [
     page: "dashboard",
     section: "Operativita",
     sectionDescription: "Monitoraggio servizio, prenotazioni e performance.",
-    subsection: "Clienti"
+    subsection: "Clienti",
+    moduleKeysAny: ["reservations", "customerScoring", "smartWaitlist"]
   },
   {
     href: "/admin/registro",
@@ -113,10 +121,27 @@ const navigation = [
   }
 ];
 
+function matchesModuleVisibility(item, moduleSummary) {
+  if (!item.moduleKey && !item.moduleKeysAny) {
+    return true;
+  }
+
+  if (item.moduleKey) {
+    return moduleSummary.has(item.moduleKey);
+  }
+
+  return moduleSummary.any(item.moduleKeysAny || []);
+}
+
 export default async function AdminLayout({ children }) {
   const user = await requireUser();
-  const items = navigation.filter((item) => canAccessPage(user, item.page));
-  const reservationSummary = canAccessPage(user, "reservations")
+  const accessibleLocationModules = await getAccessibleLocationModules(user);
+  const moduleSummary = summarizeLocationModules(accessibleLocationModules);
+  const items = navigation.filter(
+    (item) => canAccessPage(user, item.page) && matchesModuleVisibility(item, moduleSummary)
+  );
+  const showReservationTools = canAccessPage(user, "reservations") && moduleSummary.has("reservations");
+  const reservationSummary = showReservationTools
     ? await getAdminReservationLiveSummary(user)
     : null;
   const notificationSummary = await getAdminNotificationSummary(user);
@@ -127,6 +152,7 @@ export default async function AdminLayout({ children }) {
       initialNotificationSummary={notificationSummary}
       initialReservationSummary={reservationSummary}
       items={items}
+      watchReservationSummary={showReservationTools}
       showPermissions={user.role === "ADMIN"}
       userName={user.name}
       userRoleLabel={roleLabel(user.role)}

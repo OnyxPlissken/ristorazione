@@ -61,6 +61,7 @@ export default function AdminChrome({
   initialNotificationSummary,
   initialReservationSummary,
   items,
+  watchReservationSummary = false,
   showPermissions,
   userName,
   userRoleLabel
@@ -79,7 +80,7 @@ export default function AdminChrome({
   const knownNotificationIdsRef = useRef(
     new Set((initialNotificationSummary?.recentNotifications || []).map((item) => item.id))
   );
-  const canWatchReservations = items.some((item) => item.page === "reservations");
+  const canWatchReservations = watchReservationSummary;
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 1180px)");
