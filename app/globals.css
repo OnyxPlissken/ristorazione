@@ -3206,6 +3206,135 @@ textarea {
   grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
 }
 
+.crm-stats-grid,
+.crm-toolbar,
+.crm-workspace,
+.crm-filter-group,
+.crm-location-strip,
+.crm-activity-grid,
+.crm-mini-list {
+  display: grid;
+  gap: 12px;
+}
+
+.crm-stats-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.crm-toolbar {
+  grid-template-columns: minmax(260px, 1.3fr) repeat(2, minmax(220px, 1fr));
+  align-items: start;
+}
+
+.crm-filter-group {
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+}
+
+.crm-workspace {
+  grid-template-columns: minmax(0, 1.1fr) minmax(340px, 0.9fr);
+}
+
+.crm-list-shell,
+.crm-list,
+.crm-detail-panel,
+.crm-activity-card {
+  display: grid;
+  gap: 10px;
+}
+
+.crm-list-head,
+.crm-list-row {
+  display: grid;
+  grid-template-columns: minmax(220px, 1.2fr) minmax(100px, 0.7fr) minmax(90px, 0.55fr) minmax(90px, 0.55fr) minmax(120px, 0.75fr) minmax(170px, 0.95fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.crm-list-head {
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.crm-list-row {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(255, 255, 255, 0.68);
+  text-align: left;
+  cursor: pointer;
+}
+
+.crm-list-row.active {
+  background: rgba(19, 35, 30, 0.92);
+  border-color: transparent;
+  color: var(--text-inverse);
+}
+
+.crm-cell {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.crm-cell strong {
+  font-size: 0.94rem;
+}
+
+.crm-cell small {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.crm-list-row.active .crm-cell small {
+  color: rgba(255, 248, 239, 0.72);
+}
+
+.crm-primary strong {
+  font-size: 0.98rem;
+}
+
+.crm-location-strip {
+  grid-template-columns: repeat(auto-fit, minmax(120px, max-content));
+  justify-content: start;
+}
+
+.crm-activity-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.crm-activity-card {
+  padding: 14px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.crm-mini-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 10px 0;
+  border-top: 1px solid rgba(19, 35, 30, 0.08);
+}
+
+.crm-mini-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.crm-mini-row strong {
+  display: block;
+}
+
+.crm-mini-row small {
+  color: var(--muted);
+}
+
 .analytics-table {
   display: grid;
   gap: 8px;
@@ -3704,6 +3833,10 @@ textarea {
   .console-grid-triple,
   .console-grid-compact,
   .permission-role-strip,
+  .crm-stats-grid,
+  .crm-toolbar,
+  .crm-workspace,
+  .crm-activity-grid,
   .user-list-head,
   .user-list-row,
   .menu-filter-grid,
@@ -3766,6 +3899,10 @@ textarea {
     display: none;
   }
 
+  .crm-list-head {
+    display: none;
+  }
+
   .page-stack,
   .admin-page-main {
     gap: 16px;
@@ -3800,6 +3937,8 @@ textarea {
   }
 
   .slot-insight-card,
+  .crm-list-head,
+  .crm-list-row,
   .analytics-table-head,
   .analytics-table-row,
   .analytics-table-head-locations,
@@ -4079,6 +4218,7 @@ textarea {
   .notification-panel-header,
   .notification-item-head,
   .notification-meta,
+  .crm-mini-row,
   .reservation-list-item-head,
   .reservation-list-item-meta,
   .reservation-list-head {

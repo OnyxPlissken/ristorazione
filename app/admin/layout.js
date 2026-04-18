@@ -22,6 +22,7 @@ const navigation = [
     section: "Operativo"
   },
   { href: "/admin/analytics", label: "Analytics", page: "dashboard", section: "Operativo" },
+  { href: "/admin/clienti", label: "CRM", page: "reservations", section: "Operativo" },
   { href: "/admin/registro", label: "Registro", page: "reservations", section: "Operativo" },
   { href: "/admin/sedi", label: "Sedi", page: "locations", section: "Setup locale" },
   { href: "/admin/tavoli", label: "Tavoli", page: "tables", section: "Setup locale" },
