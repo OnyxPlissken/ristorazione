@@ -7,11 +7,42 @@ import PublicFloorPlanPicker from "./public-floor-plan-picker";
 const initialState = {
   error: "",
   success: "",
-  canJoinWaitlist: false
+  canJoinWaitlist: false,
+  priorityHint: "",
+  depositNotice: ""
 };
 
 function todayValue() {
   return new Date().toISOString().slice(0, 10);
+}
+
+function SlotRecommendationStrip({ onSelect, selectedSlot, slots, title }) {
+  if (!slots.length) {
+    return null;
+  }
+
+  return (
+    <div className="slot-recommendation-strip">
+      <strong>{title}</strong>
+      <div className="slot-recommendation-list">
+        {slots.map((slot) => (
+          <button
+            className={
+              selectedSlot === slot.value
+                ? "slot-recommendation-chip active"
+                : "slot-recommendation-chip"
+            }
+            key={slot.value}
+            onClick={() => onSelect(slot.value)}
+            type="button"
+          >
+            <span>{slot.label}</span>
+            <small>{slot.recommendationReason || slot.fitLabel}</small>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export default function PublicReservationForm({ locations }) {
@@ -28,7 +59,9 @@ export default function PublicReservationForm({ locations }) {
   const [slotState, setSlotState] = useState({
     loading: false,
     error: "",
-    slots: []
+    slots: [],
+    recommendations: [],
+    optimizationEnabled: false
   });
   const [floorPlanState, setFloorPlanState] = useState({
     loading: false,
@@ -42,6 +75,10 @@ export default function PublicReservationForm({ locations }) {
   const tableSelectionEnabled = Boolean(
     selectedLocation?.technicalSettings?.customerTableSelectionEnabled
   );
+  const selectedSlotData = slotState.slots.find((slot) => slot.value === selectedSlot) || null;
+  const alternativeSlots = slotState.recommendations.filter(
+    (slot) => slot.value !== selectedSlot
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -51,7 +88,9 @@ export default function PublicReservationForm({ locations }) {
         setSlotState({
           loading: false,
           error: "",
-          slots: []
+          slots: [],
+          recommendations: [],
+          optimizationEnabled: false
         });
         return;
       }
@@ -82,7 +121,9 @@ export default function PublicReservationForm({ locations }) {
         setSlotState({
           loading: false,
           error: "",
-          slots: payload.slots || []
+          slots: payload.slots || [],
+          recommendations: payload.recommendations || [],
+          optimizationEnabled: Boolean(payload.slotOptimizationEnabled)
         });
       } catch (error) {
         if (cancelled) {
@@ -92,7 +133,9 @@ export default function PublicReservationForm({ locations }) {
         setSlotState({
           loading: false,
           error: error.message || "Impossibile caricare gli slot.",
-          slots: []
+          slots: [],
+          recommendations: [],
+          optimizationEnabled: false
         });
       }
     }
@@ -274,6 +317,7 @@ export default function PublicReservationForm({ locations }) {
                 {slotState.slots.map((slot) => (
                   <option key={slot.value} value={slot.value}>
                     {slot.label} - {slot.available ? "disponibile" : "non disponibile"}
+                    {slot.recommended ? " - consigliato" : ""}
                   </option>
                 ))}
               </select>
@@ -318,6 +362,51 @@ export default function PublicReservationForm({ locations }) {
         </div>
       ) : null}
 
+      {usesTimeSlots && selectedSlotData ? (
+        <div className="slot-insight-card">
+          <div>
+            <strong>
+              {selectedSlotData.recommended
+                ? `Slot consigliato: ${selectedSlotData.label}`
+                : `Slot selezionato: ${selectedSlotData.label}`}
+            </strong>
+            <p>{selectedSlotData.recommendationReason}</p>
+          </div>
+          <div className="slot-insight-meta">
+            <span>{selectedSlotData.fitLabel}</span>
+            {selectedSlotData.available ? (
+              <span>
+                {selectedSlotData.tableLabel || `${selectedSlotData.assignedSeats} coperti`}
+              </span>
+            ) : null}
+          </div>
+        </div>
+      ) : null}
+
+      {usesTimeSlots && slotState.optimizationEnabled ? (
+        <SlotRecommendationStrip
+          onSelect={(value) => {
+            setSelectedSlot(value);
+            setSelectedDateTime(value);
+          }}
+          selectedSlot={selectedSlot}
+          slots={slotState.recommendations}
+          title="Slot consigliati dal motore"
+        />
+      ) : null}
+
+      {usesTimeSlots && selectedSlotData && !selectedSlotData.available ? (
+        <SlotRecommendationStrip
+          onSelect={(value) => {
+            setSelectedSlot(value);
+            setSelectedDateTime(value);
+          }}
+          selectedSlot={selectedSlot}
+          slots={alternativeSlots}
+          title="Alternative rapide per evitare la coda"
+        />
+      ) : null}
+
       <input name="selectedTableId" type="hidden" value={selectedTableId} />
 
       <PublicFloorPlanPicker
@@ -340,6 +429,8 @@ export default function PublicReservationForm({ locations }) {
 
       {state?.error ? <p className="form-error">{state.error}</p> : null}
       {state?.success ? <p className="form-success">{state.success}</p> : null}
+      {state?.priorityHint ? <p className="helper-copy">{state.priorityHint}</p> : null}
+      {state?.depositNotice ? <p className="form-warning">{state.depositNotice}</p> : null}
 
       <div className="cta-row">
         <button
@@ -357,10 +448,7 @@ export default function PublicReservationForm({ locations }) {
           disabled={
             pending ||
             (usesTimeSlots
-              ? !selectedSlot ||
-                (!state.canJoinWaitlist &&
-                  slotState.slots.length > 0 &&
-                  slotState.slots.find((slot) => slot.value === selectedSlot)?.available)
+              ? !selectedSlot || Boolean(selectedSlotData?.available)
               : false)
           }
           name="intent"

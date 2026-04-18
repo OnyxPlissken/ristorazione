@@ -11,8 +11,39 @@ import PublicFloorPlanPicker from "./public-floor-plan-picker";
 const initialState = {
   error: "",
   success: "",
-  canJoinWaitlist: false
+  canJoinWaitlist: false,
+  priorityHint: "",
+  depositNotice: ""
 };
+
+function SlotRecommendationStrip({ onSelect, selectedSlot, slots, title }) {
+  if (!slots.length) {
+    return null;
+  }
+
+  return (
+    <div className="slot-recommendation-strip">
+      <strong>{title}</strong>
+      <div className="slot-recommendation-list">
+        {slots.map((slot) => (
+          <button
+            className={
+              selectedSlot === slot.value
+                ? "slot-recommendation-chip active"
+                : "slot-recommendation-chip"
+            }
+            key={slot.value}
+            onClick={() => onSelect(slot.value)}
+            type="button"
+          >
+            <span>{slot.label}</span>
+            <small>{slot.recommendationReason || slot.fitLabel}</small>
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
 
 export default function PublicManageReservationForm({ reservation }) {
   const [updateState, updateAction, updatePending] = useActionState(
@@ -31,7 +62,9 @@ export default function PublicManageReservationForm({ reservation }) {
   const [slotState, setSlotState] = useState({
     loading: false,
     error: "",
-    slots: []
+    slots: [],
+    recommendations: [],
+    optimizationEnabled: false
   });
   const [floorPlanState, setFloorPlanState] = useState({
     loading: false,
@@ -45,6 +78,10 @@ export default function PublicManageReservationForm({ reservation }) {
     reservation.location.technicalSettings?.customerTableSelectionEnabled
   );
   const isLocked = ["CANCELLATA", "COMPLETATA", "NO_SHOW"].includes(reservation.status);
+  const selectedSlotData = slotState.slots.find((slot) => slot.value === selectedSlot) || null;
+  const alternativeSlots = slotState.recommendations.filter(
+    (slot) => slot.value !== selectedSlot
+  );
 
   useEffect(() => {
     let cancelled = false;
@@ -54,7 +91,9 @@ export default function PublicManageReservationForm({ reservation }) {
         setSlotState({
           loading: false,
           error: "",
-          slots: []
+          slots: [],
+          recommendations: [],
+          optimizationEnabled: false
         });
         return;
       }
@@ -85,7 +124,9 @@ export default function PublicManageReservationForm({ reservation }) {
         setSlotState({
           loading: false,
           error: "",
-          slots: payload.slots || []
+          slots: payload.slots || [],
+          recommendations: payload.recommendations || [],
+          optimizationEnabled: Boolean(payload.slotOptimizationEnabled)
         });
       } catch (error) {
         if (cancelled) {
@@ -95,7 +136,9 @@ export default function PublicManageReservationForm({ reservation }) {
         setSlotState({
           loading: false,
           error: error.message || "Impossibile caricare gli slot.",
-          slots: []
+          slots: [],
+          recommendations: [],
+          optimizationEnabled: false
         });
       }
     }
@@ -221,6 +264,9 @@ export default function PublicManageReservationForm({ reservation }) {
         <div className="row-meta">
           <span>{reservation.guests} coperti</span>
           <span>{reservation.status}</span>
+          {reservation.customerProfileSummary?.band ? (
+            <span>Cliente {reservation.customerProfileSummary.band}</span>
+          ) : null}
         </div>
       </div>
 
@@ -255,6 +301,7 @@ export default function PublicManageReservationForm({ reservation }) {
                     {slotState.slots.map((slot) => (
                       <option key={slot.value} value={slot.value}>
                         {slot.label} - {slot.available ? "disponibile" : "non disponibile"}
+                        {slot.recommended ? " - consigliato" : ""}
                       </option>
                     ))}
                   </select>
@@ -307,6 +354,51 @@ export default function PublicManageReservationForm({ reservation }) {
             </div>
           ) : null}
 
+          {usesTimeSlots && selectedSlotData ? (
+            <div className="slot-insight-card">
+              <div>
+                <strong>
+                  {selectedSlotData.recommended
+                    ? `Slot consigliato: ${selectedSlotData.label}`
+                    : `Slot selezionato: ${selectedSlotData.label}`}
+                </strong>
+                <p>{selectedSlotData.recommendationReason}</p>
+              </div>
+              <div className="slot-insight-meta">
+                <span>{selectedSlotData.fitLabel}</span>
+                {selectedSlotData.available ? (
+                  <span>
+                    {selectedSlotData.tableLabel || `${selectedSlotData.assignedSeats} coperti`}
+                  </span>
+                ) : null}
+              </div>
+            </div>
+          ) : null}
+
+          {usesTimeSlots && slotState.optimizationEnabled ? (
+            <SlotRecommendationStrip
+              onSelect={(value) => {
+                setSelectedSlot(value);
+                setSelectedDateTime(value);
+              }}
+              selectedSlot={selectedSlot}
+              slots={slotState.recommendations}
+              title="Slot consigliati dal motore"
+            />
+          ) : null}
+
+          {usesTimeSlots && selectedSlotData && !selectedSlotData.available ? (
+            <SlotRecommendationStrip
+              onSelect={(value) => {
+                setSelectedSlot(value);
+                setSelectedDateTime(value);
+              }}
+              selectedSlot={selectedSlot}
+              slots={alternativeSlots}
+              title="Alternative disponibili"
+            />
+          ) : null}
+
           <PublicFloorPlanPicker
             enabled={floorPlanState.enabled}
             error={floorPlanState.error}
@@ -323,8 +415,17 @@ export default function PublicManageReservationForm({ reservation }) {
 
           {updateState.error ? <p className="form-error">{updateState.error}</p> : null}
           {updateState.success ? <p className="form-success">{updateState.success}</p> : null}
+          {updateState.priorityHint ? <p className="helper-copy">{updateState.priorityHint}</p> : null}
+          {updateState.depositNotice ? <p className="form-warning">{updateState.depositNotice}</p> : null}
           {cancelState.error ? <p className="form-error">{cancelState.error}</p> : null}
           {cancelState.success ? <p className="form-success">{cancelState.success}</p> : null}
+          {reservation.depositRequired && !updateState.depositNotice ? (
+            <p className="form-warning">
+              {reservation.depositAmount
+                ? `Questa prenotazione rientra in deposito consigliato di EUR ${Number(reservation.depositAmount).toFixed(2)}.`
+                : "Questa prenotazione rientra in deposito consigliato."}
+            </p>
+          ) : null}
 
           <div className="entity-footer">
             <span>

@@ -67,11 +67,28 @@ function statusTone(status) {
   return "failed";
 }
 
+function customerBandTone(band) {
+  if (band === "A") {
+    return "band-a";
+  }
+
+  if (band === "D") {
+    return "band-d";
+  }
+
+  if (band === "C") {
+    return "band-c";
+  }
+
+  return "band-b";
+}
+
 function ReservationListItem({ active, onSelect, reservation }) {
   const assignedTableLabel = reservation.assignedTableCodes?.length
     ? reservation.assignedTableCodes.join(" + ")
     : "Auto";
   const contactLabel = reservation.guestEmail || reservation.guestPhone || "Nessun contatto";
+  const customerBand = reservation.customerProfileSummary?.band || reservation.customerBand;
 
   return (
     <button
@@ -81,7 +98,10 @@ function ReservationListItem({ active, onSelect, reservation }) {
     >
       <span className="reservation-row-cell reservation-row-primary">
         <strong>{reservation.guestName}</strong>
-        <small>{contactLabel}</small>
+        <small>
+          {contactLabel}
+          {customerBand ? ` / Fascia ${customerBand}` : ""}
+        </small>
       </span>
       <span className="reservation-row-cell">
         <strong>{formatDateTime(reservation.dateTime)}</strong>
@@ -122,6 +142,7 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
   const assignedTableLabel = reservation.assignedTableCodes?.length
     ? reservation.assignedTableCodes.join(" + ")
     : reservation.table?.code || "Assegnazione automatica";
+  const customerProfile = reservation.customerProfileSummary;
 
   return (
     <section className="section-card reservation-detail-panel">
@@ -135,9 +156,16 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
                 {reservation.locationName} / {formatDateTime(reservation.dateTime)}
               </p>
             </div>
-            <span className={`table-status-chip ${statusTone(reservation.status)}`}>
-              {RESERVATION_STATUS_LABELS[reservation.status] || reservation.status}
-            </span>
+            <div className="reservation-header-badges">
+              {customerProfile?.band ? (
+                <span className={`customer-band-chip ${customerBandTone(customerProfile.band)}`}>
+                  Cliente {customerProfile.band}
+                </span>
+              ) : null}
+              <span className={`table-status-chip ${statusTone(reservation.status)}`}>
+                {RESERVATION_STATUS_LABELS[reservation.status] || reservation.status}
+              </span>
+            </div>
           </div>
 
           <div className="reservation-detail-grid">
@@ -165,7 +193,46 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
               <span>Link gestione</span>
               <strong>{reservation.manageToken ? "Disponibile" : "Non generato"}</strong>
             </div>
+            <div className="reservation-detail-cell">
+              <span>Priorita cliente</span>
+              <strong>{customerProfile?.priorityScore ?? reservation.customerPriorityScore ?? 0}</strong>
+            </div>
+            <div className="reservation-detail-cell">
+              <span>Deposito consigliato</span>
+              <strong>
+                {reservation.depositRequired
+                  ? reservation.depositAmount
+                    ? `EUR ${Number(reservation.depositAmount).toFixed(2)}`
+                    : "Richiesto"
+                  : "Non richiesto"}
+              </strong>
+            </div>
           </div>
+
+          {customerProfile ? (
+            <div className="customer-profile-summary">
+              <div>
+                <span>Storico</span>
+                <strong>{customerProfile.completedReservations} completate</strong>
+              </div>
+              <div>
+                <span>No-show</span>
+                <strong>{customerProfile.noShowCount}</strong>
+              </div>
+              <div>
+                <span>Affidabilita</span>
+                <strong>{customerProfile.reliabilityScore}/100</strong>
+              </div>
+              <div>
+                <span>Spesa media</span>
+                <strong>
+                  {customerProfile.averageSpend
+                    ? `EUR ${Number(customerProfile.averageSpend).toFixed(0)}`
+                    : "n.d."}
+                </strong>
+              </div>
+            </div>
+          ) : null}
 
           <div className="reservation-editor-grid">
             <label>
@@ -188,6 +255,16 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
                   </option>
                 ))}
               </select>
+            </label>
+            <label>
+              <span>Spesa registrata</span>
+              <input
+                defaultValue={reservation.spendAmount || ""}
+                min="0"
+                name="spendAmount"
+                step="0.01"
+                type="number"
+              />
             </label>
           </div>
 

@@ -63,6 +63,11 @@ export async function GET(request) {
 
   return Response.json({
     useTimeSlots: location.settings?.useTimeSlots ?? true,
+    slotOptimizationEnabled: location.technicalSettings?.slotOptimizationEnabled !== false,
+    recommendations: [...slots]
+      .filter((slot) => slot.recommended)
+      .sort((left, right) => (right.slotScore || 0) - (left.slotScore || 0))
+      .slice(0, 3),
     slots
   });
 }

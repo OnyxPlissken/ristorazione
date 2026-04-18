@@ -128,6 +128,12 @@ export default async function AdminHomePage() {
         <StatCard label="Menu attivi" value={data.stats.menus} />
         <StatCard label="Prenotazioni registrate" value={data.stats.reservations} />
         <StatCard label="Sessioni QR aperte" value={data.stats.qrSessions} />
+        <StatCard label="Waitlist aperta" value={data.stats.waitlistOpen} />
+        <StatCard label="Clienti fascia A" value={data.stats.highValueCustomers} />
+        <StatCard
+          label="No-show 30g"
+          value={`${data.insights.noShowRateLast30}%`}
+        />
       </section>
 
       <section className="panel-card">

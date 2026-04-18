@@ -42,6 +42,18 @@ function featureSummary(technical, location) {
   if (technical.customerTableSelectionEnabled) {
     items.push("Scelta tavolo");
   }
+  if (technical.slotOptimizationEnabled !== false) {
+    items.push("Slot IQ");
+  }
+  if (technical.smartWaitlistEnabled !== false) {
+    items.push("Waitlist smart");
+  }
+  if (technical.customerScoringEnabled !== false) {
+    items.push("Scoring");
+  }
+  if (technical.adaptiveDepositEnabled) {
+    items.push("Deposito");
+  }
   if (technical.deliveryEnabled) {
     items.push("Delivery");
   }
@@ -298,6 +310,57 @@ export default async function ConsoleAdminPage({ searchParams }) {
                         />
                         <span>Abilita Google Business</span>
                       </label>
+                    </div>
+
+                    <div className="console-subsection">
+                      <h5>Motore ottimizzazione tavoli</h5>
+                      <div className="console-checkbox-grid">
+                        <label className="checkbox-item">
+                          <input
+                            defaultChecked={technical.slotOptimizationEnabled !== false}
+                            name="slotOptimizationEnabled"
+                            type="checkbox"
+                          />
+                          <span>Ottimizza e raccomanda gli slot migliori</span>
+                        </label>
+                        <label className="checkbox-item">
+                          <input
+                            defaultChecked={technical.smartWaitlistEnabled !== false}
+                            name="smartWaitlistEnabled"
+                            type="checkbox"
+                          />
+                          <span>Ordina la waitlist per priorita cliente</span>
+                        </label>
+                        <label className="checkbox-item">
+                          <input
+                            defaultChecked={technical.customerScoringEnabled !== false}
+                            name="customerScoringEnabled"
+                            type="checkbox"
+                          />
+                          <span>Abilita scoring cliente e fasce A/B/C/D</span>
+                        </label>
+                        <label className="checkbox-item">
+                          <input
+                            defaultChecked={Boolean(technical.adaptiveDepositEnabled)}
+                            name="adaptiveDepositEnabled"
+                            type="checkbox"
+                          />
+                          <span>Richiedi deposito consigliato sui profili a rischio</span>
+                        </label>
+                      </div>
+
+                      <div className="form-grid">
+                        <label>
+                          <span>Deposito consigliato (EUR)</span>
+                          <input
+                            defaultValue={technical.adaptiveDepositAmount || ""}
+                            min="0"
+                            name="adaptiveDepositAmount"
+                            step="0.01"
+                            type="number"
+                          />
+                        </label>
+                      </div>
                     </div>
                   </section>
 
@@ -692,7 +755,45 @@ export default async function ConsoleAdminPage({ searchParams }) {
                   </div>
                 </div>
 
-                <div className="console-block-grid console-block-grid-split">
+                <div className="console-block-grid console-block-grid-triple">
+                  <section className="console-block">
+                    <div className="console-block-head">
+                      <h4>Ottimizzazione servizio</h4>
+                      <p>Come il motore decide slot, priorita waitlist e deposito.</p>
+                    </div>
+
+                    <div className="console-side-summary">
+                      <div>
+                        <strong>Slot recommendation</strong>
+                        <span>
+                          {technical.slotOptimizationEnabled !== false ? "Attiva" : "Disattiva"}
+                        </span>
+                      </div>
+                      <div>
+                        <strong>Waitlist intelligente</strong>
+                        <span>
+                          {technical.smartWaitlistEnabled !== false ? "Attiva" : "Disattiva"}
+                        </span>
+                      </div>
+                      <div>
+                        <strong>Scoring clienti</strong>
+                        <span>
+                          {technical.customerScoringEnabled !== false ? "Attivo" : "Disattivo"}
+                        </span>
+                      </div>
+                      <div>
+                        <strong>Deposito adattivo</strong>
+                        <span>
+                          {technical.adaptiveDepositEnabled
+                            ? technical.adaptiveDepositAmount
+                              ? `EUR ${Number(technical.adaptiveDepositAmount).toFixed(2)}`
+                              : "Attivo senza importo"
+                            : "Disattivo"}
+                        </span>
+                      </div>
+                    </div>
+                  </section>
+
                   <section className="console-block">
                     <div className="console-block-head">
                       <h4>QR tavoli</h4>

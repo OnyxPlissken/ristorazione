@@ -844,7 +844,8 @@ textarea {
 }
 
 .form-error,
-.form-success {
+.form-success,
+.form-warning {
   margin: 0;
   padding: 12px 14px;
   border-radius: 14px;
@@ -858,6 +859,11 @@ textarea {
 .form-success {
   background: rgba(32, 89, 65, 0.12);
   color: #1d5d44;
+}
+
+.form-warning {
+  background: rgba(232, 155, 102, 0.16);
+  color: #7d2d17;
 }
 
 .hours-row,
@@ -917,6 +923,75 @@ textarea {
   margin: 0;
   color: var(--muted);
   line-height: 1.55;
+}
+
+.slot-insight-card,
+.slot-recommendation-strip,
+.customer-profile-summary,
+.analytics-stat-card {
+  border-radius: 12px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(255, 255, 255, 0.62);
+}
+
+.slot-insight-card {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+}
+
+.slot-insight-card p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.slot-insight-meta {
+  display: grid;
+  gap: 8px;
+  justify-items: end;
+  color: var(--muted);
+  text-align: right;
+}
+
+.slot-recommendation-strip {
+  display: grid;
+  gap: 10px;
+  padding: 14px 16px;
+}
+
+.slot-recommendation-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.slot-recommendation-chip {
+  display: grid;
+  gap: 2px;
+  min-width: 148px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: #fff;
+  text-align: left;
+  cursor: pointer;
+}
+
+.slot-recommendation-chip small {
+  color: var(--muted);
+}
+
+.slot-recommendation-chip.active {
+  background: rgba(19, 35, 30, 0.92);
+  border-color: transparent;
+  color: var(--text-inverse);
+}
+
+.slot-recommendation-chip.active small {
+  color: rgba(255, 248, 239, 0.72);
 }
 
 .location-switcher,
@@ -1040,6 +1115,18 @@ textarea {
 .console-section-panel {
   display: grid;
   gap: 18px;
+}
+
+.console-subsection {
+  display: grid;
+  gap: 12px;
+  padding-top: 12px;
+  border-top: 1px solid rgba(19, 35, 30, 0.08);
+}
+
+.console-subsection h5 {
+  margin: 0;
+  font-size: 0.94rem;
 }
 
 .console-section-header h3 {
@@ -3005,6 +3092,13 @@ textarea {
   gap: 10px;
 }
 
+.reservation-header-badges {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
 .reservation-detail-cell {
   display: grid;
   gap: 4px;
@@ -3026,6 +3120,133 @@ textarea {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+}
+
+.customer-profile-summary {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  padding: 12px 14px;
+}
+
+.customer-profile-summary div {
+  display: grid;
+  gap: 4px;
+}
+
+.customer-profile-summary span {
+  color: var(--muted);
+  font-size: 0.76rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.customer-band-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 30px;
+  padding: 0 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.customer-band-chip.band-a {
+  background: rgba(32, 89, 65, 0.14);
+  color: #1d5d44;
+}
+
+.customer-band-chip.band-b {
+  background: rgba(232, 155, 102, 0.16);
+  color: #7d2d17;
+}
+
+.customer-band-chip.band-c {
+  background: rgba(19, 35, 30, 0.08);
+  color: var(--text);
+}
+
+.customer-band-chip.band-d {
+  background: rgba(157, 68, 40, 0.12);
+  color: #7d2d17;
+}
+
+.analytics-page {
+  gap: 20px;
+}
+
+.analytics-stat-grid,
+.analytics-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.analytics-stat-grid {
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+}
+
+.analytics-stat-card {
+  display: grid;
+  gap: 6px;
+  padding: 14px 16px;
+}
+
+.analytics-stat-card span,
+.analytics-stat-card small {
+  color: var(--muted);
+}
+
+.analytics-stat-card strong {
+  font-size: 1.35rem;
+}
+
+.analytics-grid {
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+}
+
+.analytics-table {
+  display: grid;
+  gap: 8px;
+}
+
+.analytics-table-head,
+.analytics-table-row {
+  display: grid;
+  grid-template-columns: minmax(120px, 1fr) repeat(3, minmax(90px, 0.7fr));
+  gap: 12px;
+  align-items: center;
+}
+
+.analytics-table-head {
+  padding: 0 8px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.analytics-table-row {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: #fff;
+}
+
+.analytics-customer-cell {
+  display: grid;
+  gap: 4px;
+}
+
+.analytics-customer-cell small {
+  color: var(--muted);
+}
+
+.analytics-table-head-locations,
+.analytics-table-row-locations {
+  grid-template-columns: minmax(180px, 1.1fr) repeat(4, minmax(90px, 0.7fr));
 }
 
 .reservation-info-grid div {
@@ -3522,6 +3743,8 @@ textarea {
   .reservation-detail-grid,
   .reservation-editor-grid,
   .reservation-info-grid,
+  .customer-profile-summary,
+  .analytics-grid,
   .reservation-list-item,
   .reservation-list-grid-head {
     grid-template-columns: 1fr;
@@ -3574,6 +3797,14 @@ textarea {
 
   .reservation-row-status {
     justify-items: start;
+  }
+
+  .slot-insight-card,
+  .analytics-table-head,
+  .analytics-table-row,
+  .analytics-table-head-locations,
+  .analytics-table-row-locations {
+    grid-template-columns: 1fr;
   }
 
   .user-list-head {
