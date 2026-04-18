@@ -9,8 +9,10 @@ import {
 } from "react";
 import { updateReservationAction } from "../lib/actions/admin-actions";
 import {
+  CUSTOMER_SCORE_BAND_LABELS,
   RESERVATION_SOURCE_LABELS,
-  RESERVATION_STATUS_LABELS
+  RESERVATION_STATUS_LABELS,
+  customerBandTone
 } from "../lib/constants";
 import { formatDateTime } from "../lib/format";
 
@@ -67,22 +69,6 @@ function statusTone(status) {
   return "failed";
 }
 
-function customerBandTone(band) {
-  if (band === "A") {
-    return "band-a";
-  }
-
-  if (band === "D") {
-    return "band-d";
-  }
-
-  if (band === "C") {
-    return "band-c";
-  }
-
-  return "band-b";
-}
-
 function ReservationListItem({ active, onSelect, reservation }) {
   const assignedTableLabel = reservation.assignedTableCodes?.length
     ? reservation.assignedTableCodes.join(" + ")
@@ -100,7 +86,9 @@ function ReservationListItem({ active, onSelect, reservation }) {
         <strong>{reservation.guestName}</strong>
         <small>
           {contactLabel}
-          {customerBand ? ` / Fascia ${customerBand}` : ""}
+          {customerBand
+            ? ` / ${CUSTOMER_SCORE_BAND_LABELS[customerBand] || customerBand}`
+            : ""}
         </small>
       </span>
       <span className="reservation-row-cell">
@@ -159,7 +147,7 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
             <div className="reservation-header-badges">
               {customerProfile?.band ? (
                 <span className={`customer-band-chip ${customerBandTone(customerProfile.band)}`}>
-                  Cliente {customerProfile.band}
+                  {CUSTOMER_SCORE_BAND_LABELS[customerProfile.band] || customerProfile.band}
                 </span>
               ) : null}
               <span className={`table-status-chip ${statusTone(reservation.status)}`}>

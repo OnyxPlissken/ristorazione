@@ -1,4 +1,9 @@
 import { requireUser } from "../../../lib/auth";
+import {
+  CUSTOMER_SCORE_BAND_LABELS,
+  CUSTOMER_SCORE_BAND_SUMMARY_LABELS,
+  customerBandTone
+} from "../../../lib/constants";
 import { requirePageAccess } from "../../../lib/permissions";
 import { getAnalyticsPageData } from "../../../lib/queries";
 
@@ -64,8 +69,8 @@ export default async function AnalyticsPage() {
             value={data.stats.avgGuests.toFixed(1)}
             hint="media per prenotazione"
           />
-          <MetricCard label="Clienti fascia A" value={data.stats.highValueCustomers} />
-          <MetricCard label="Clienti fascia D" value={data.stats.riskCustomers} />
+          <MetricCard label={CUSTOMER_SCORE_BAND_SUMMARY_LABELS.A} value={data.stats.highValueCustomers} />
+          <MetricCard label={CUSTOMER_SCORE_BAND_SUMMARY_LABELS.D} value={data.stats.riskCustomers} />
         </div>
       </section>
 
@@ -125,8 +130,8 @@ export default async function AnalyticsPage() {
                     {customer.completedReservations} completate / {customer.noShowCount} no-show
                   </small>
                 </div>
-                <span className={`customer-band-chip band-${String(customer.band || "B").toLowerCase()}`}>
-                  {customer.band}
+                <span className={`customer-band-chip ${customerBandTone(customer.band || "B")}`}>
+                  {CUSTOMER_SCORE_BAND_LABELS[customer.band] || customer.band}
                 </span>
                 <span>{customer.priorityScore}</span>
                 <span>{formatCurrency(customer.averageSpend)}</span>

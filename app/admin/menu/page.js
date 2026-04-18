@@ -55,6 +55,19 @@ function flattenMenus(locations) {
   );
 }
 
+function groupMenusByScope(menus) {
+  return menus.reduce((groups, menu) => {
+    const key = menu.appliesToAllLocations ? "Tutte le sedi" : menu.locationSummary || "Sede non assegnata";
+
+    if (!groups.has(key)) {
+      groups.set(key, []);
+    }
+
+    groups.get(key).push(menu);
+    return groups;
+  }, new Map());
+}
+
 function getMenuHref(menuId) {
   const params = new URLSearchParams();
 
@@ -93,6 +106,7 @@ export default async function MenuPage({ searchParams }) {
 
   const totalSections = flattenedMenus.reduce((sum, menu) => sum + menu.sections.length, 0);
   const totalItems = flattenedMenus.reduce((sum, menu) => sum + countMenuItems(menu), 0);
+  const groupedMenus = groupMenusByScope(flattenedMenus);
 
   return (
     <div className="page-stack">
@@ -180,31 +194,36 @@ export default async function MenuPage({ searchParams }) {
               </div>
 
               <div className="menu-tab-list">
-                {flattenedMenus.map((menu) => {
-                  const itemCount = countMenuItems(menu);
+                {[...groupedMenus.entries()].map(([scope, menus]) => (
+                  <div className="menu-tab-group" key={scope}>
+                    <div className="menu-tab-group-label">{scope}</div>
+                    <div className="menu-tab-group-items">
+                      {menus.map((menu) => {
+                        const itemCount = countMenuItems(menu);
 
-                  return (
-                    <Link
-                      className={menu.id === selectedMenu?.id ? "menu-tab active" : "menu-tab"}
-                      href={getMenuHref(menu.id)}
-                      key={menu.id}
-                    >
-                      <div className="menu-tab-main">
-                        <strong>{menu.name}</strong>
-                        <span>{menu.description || "Nessuna descrizione"}</span>
-                      </div>
+                        return (
+                          <Link
+                            className={menu.id === selectedMenu?.id ? "menu-tab active" : "menu-tab"}
+                            href={getMenuHref(menu.id)}
+                            key={menu.id}
+                          >
+                            <div className="menu-tab-main">
+                              <strong>{menu.name}</strong>
+                              <span>{menu.description || "Nessuna descrizione"}</span>
+                            </div>
 
-                      <div className="menu-tab-meta">
-                        <small className="menu-tab-eyebrow">
-                          {menu.appliesToAllLocations ? "Tutte le sedi" : menu.locationSummary}
-                        </small>
-                        <small>
-                          {menu.sections.length} sezioni / {itemCount} piatti
-                        </small>
-                      </div>
-                    </Link>
-                  );
-                })}
+                            <div className="menu-tab-meta">
+                              <small className="menu-tab-eyebrow">
+                                {menu.sections.length} sezioni / {itemCount} piatti
+                              </small>
+                              <small>{menu.isActive ? "Attivo" : "Bozza"}</small>
+                            </div>
+                          </Link>
+                        );
+                      })}
+                    </div>
+                  </div>
+                ))}
               </div>
             </aside>
 

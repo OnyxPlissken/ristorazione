@@ -1,6 +1,11 @@
 "use client";
 
 import { startTransition, useDeferredValue, useEffect, useState } from "react";
+import {
+  CUSTOMER_SCORE_BAND_LABELS,
+  CUSTOMER_SCORE_BAND_SUMMARY_LABELS,
+  customerBandTone
+} from "../lib/constants";
 import { euro, formatDateTime } from "../lib/format";
 
 const typeFilters = ["ALL", "CLIENTE", "PROSPECT"];
@@ -23,23 +28,6 @@ function matchesSearch(profile, query) {
 
   return haystack.includes(query);
 }
-
-function bandTone(band) {
-  if (band === "A") {
-    return "band-a";
-  }
-
-  if (band === "D") {
-    return "band-d";
-  }
-
-  if (band === "C") {
-    return "band-c";
-  }
-
-  return "band-b";
-}
-
 function CrmListRow({ active, onSelect, profile }) {
   return (
     <button
@@ -52,7 +40,9 @@ function CrmListRow({ active, onSelect, profile }) {
         <small>{profile.normalizedEmail || profile.normalizedPhone || "Contatto non disponibile"}</small>
       </div>
       <div className="crm-cell">
-        <span className={`customer-band-chip ${bandTone(profile.band)}`}>{profile.band}</span>
+        <span className={`customer-band-chip ${customerBandTone(profile.band)}`}>
+          {CUSTOMER_SCORE_BAND_LABELS[profile.band] || profile.band}
+        </span>
         <small>{profile.type}</small>
       </div>
       <div className="crm-cell">
@@ -93,7 +83,9 @@ function CrmDetail({ profile }) {
           <p>{profile.normalizedEmail || profile.normalizedPhone || "Contatto non disponibile"}</p>
         </div>
         <div className="reservation-header-badges">
-          <span className={`customer-band-chip ${bandTone(profile.band)}`}>Fascia {profile.band}</span>
+          <span className={`customer-band-chip ${customerBandTone(profile.band)}`}>
+            {CUSTOMER_SCORE_BAND_LABELS[profile.band] || profile.band}
+          </span>
           <span className="location-chip highlighted">{profile.type}</span>
         </div>
       </div>
@@ -266,11 +258,11 @@ export default function AdminCustomerCrmPanel({ profiles, stats }) {
           </article>
           <article className="summary-chip">
             <strong>{stats.highValue}</strong>
-            <span>fascia A</span>
+            <span>{CUSTOMER_SCORE_BAND_SUMMARY_LABELS.A}</span>
           </article>
           <article className="summary-chip">
             <strong>{stats.risk}</strong>
-            <span>fascia D</span>
+            <span>{CUSTOMER_SCORE_BAND_SUMMARY_LABELS.D}</span>
           </article>
         </div>
       </section>
@@ -321,7 +313,11 @@ export default function AdminCustomerCrmPanel({ profiles, stats }) {
                 }}
                 type="button"
               >
-                <strong>{value === "ALL" ? "Tutte le fasce" : `Fascia ${value}`}</strong>
+                <strong>
+                  {value === "ALL"
+                    ? "Tutti i segmenti"
+                    : CUSTOMER_SCORE_BAND_LABELS[value] || value}
+                </strong>
               </button>
             ))}
           </div>

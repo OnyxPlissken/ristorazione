@@ -88,12 +88,31 @@ function menuAvailabilityToggleClasses(available) {
     : "checkbox-item menu-availability-toggle is-unavailable";
 }
 
+const workspaceViews = [
+  {
+    key: "overview",
+    label: "Panoramica",
+    description: "Stato del menu, struttura e riepilogo rapido."
+  },
+  {
+    key: "items",
+    label: "Piatti",
+    description: "Ricerca, disponibilita e gestione articoli."
+  },
+  {
+    key: "distribution",
+    label: "Sedi e canali",
+    description: "Dove il menu viene pubblicato e su quali canali."
+  }
+];
+
 export default function MenuWorkspacePanel({
   canManageMenus,
   locations,
   allowAllLocations,
   selectedMenu
 }) {
+  const [workspaceView, setWorkspaceView] = useState("overview");
   const [searchQuery, setSearchQuery] = useState("");
   const [sectionFilter, setSectionFilter] = useState("ALL");
   const [availabilityFilter, setAvailabilityFilter] = useState("ALL");
@@ -266,280 +285,403 @@ export default function MenuWorkspacePanel({
         </div>
       ) : null}
 
-      {renderSectionQuickActions(selectedMenu, canManageMenus)}
-
-      <div className="reservation-toolbar menu-filter-toolbar">
-        <label className="search-input-shell">
-          <span className="sr-only">Cerca piatto</span>
-          <input
-            onChange={(event) => setSearchQuery(event.target.value)}
-            placeholder="Cerca piatto, descrizione o allergeni"
-            type="search"
-            value={searchQuery}
-          />
-        </label>
-
-        <div className="menu-filter-grid">
-          <label>
-            <span>Sezione</span>
-            <select onChange={(event) => setSectionFilter(event.target.value)} value={sectionFilter}>
-              <option value="ALL">Tutte le sezioni</option>
-              {selectedMenu.sections.map((section) => (
-                <option key={section.id} value={section.id}>
-                  {section.name}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            <span>Disponibilita'</span>
-            <select onChange={(event) => setAvailabilityFilter(event.target.value)} value={availabilityFilter}>
-              <option value="ALL">Tutti i piatti</option>
-              <option value="AVAILABLE">Solo disponibili</option>
-              <option value="UNAVAILABLE">Solo non disponibili</option>
-            </select>
-          </label>
-        </div>
-      </div>
-
-      <div className="menu-filter-summary">
-        <p>
-          {visibleItems} piatti visibili in {filteredSections.length} sezioni
-          {deferredQuery ? ` per "${searchQuery.trim()}"` : ""}.
-        </p>
-        {hasActiveFilters ? (
-          <button className="button button-muted" onClick={resetFilters} type="button">
-            Azzera filtri
+      <div className="menu-subnav-strip">
+        {workspaceViews.map((view) => (
+          <button
+            className={workspaceView === view.key ? "menu-subnav-pill active" : "menu-subnav-pill"}
+            key={view.key}
+            onClick={() => setWorkspaceView(view.key)}
+            type="button"
+          >
+            <strong>{view.label}</strong>
+            <span>{view.description}</span>
           </button>
-        ) : null}
-      </div>
-
-      <div className="menu-accordion-stack">
-        {filteredSections.map((section, index) => (
-          <details className="menu-accordion" key={section.id} open={hasActiveFilters || index === 0}>
-            <summary className="menu-accordion-summary">
-              <div className="menu-accordion-copy">
-                <strong>{section.name}</strong>
-                <p>{section.items.length} piatti visibili in questa sezione</p>
-              </div>
-              <div className="menu-accordion-meta">
-                <span className="location-chip">Ordine {section.sortOrder}</span>
-              </div>
-            </summary>
-
-            <div className="menu-accordion-body">
-              {canManageMenus ? (
-                <div className="page-actions">
-                  <AdminDialog
-                    buttonLabel="Modifica sezione"
-                    description="Rinomina la sezione o cambia il suo ordine nel menu."
-                    title={`Modifica ${section.name}`}
-                  >
-                    <form action={saveMenuSectionAction} className="entity-form">
-                      <input name="menuId" type="hidden" value={selectedMenu.id} />
-                      <input name="sectionId" type="hidden" value={section.id} />
-                      <div className="form-grid">
-                        <label>
-                          <span>Nome sezione</span>
-                          <input defaultValue={section.name} name="name" type="text" />
-                        </label>
-                        <label>
-                          <span>Ordine</span>
-                          <input defaultValue={section.sortOrder} name="sortOrder" type="number" />
-                        </label>
-                      </div>
-                      <button className="button button-primary" type="submit">
-                        Aggiorna sezione
-                      </button>
-                    </form>
-                  </AdminDialog>
-
-                  <AdminDialog
-                    buttonLabel="Nuovo piatto"
-                    description="Aggiungi piatto, prezzo, allergeni e media da URL o file."
-                    title={`Nuovo piatto in ${section.name}`}
-                  >
-                    <form action={saveMenuItemAction} className="entity-form">
-                      <input name="sectionId" type="hidden" value={section.id} />
-                      <div className="form-grid">
-                        <label>
-                          <span>Piatto</span>
-                          <input name="name" placeholder="Risotto al limone" required type="text" />
-                        </label>
-                        <label>
-                          <span>Prezzo</span>
-                          <input defaultValue="0" name="price" step="0.01" type="number" />
-                        </label>
-                        <label className="full-width">
-                          <span>Descrizione</span>
-                          <input name="description" placeholder="Descrizione piatto" type="text" />
-                        </label>
-                        <label className="full-width">
-                          <span>URL media</span>
-                          <input name="imageUrl" placeholder="https://... oppure data:..." type="text" />
-                        </label>
-                        <label className="full-width">
-                          <span>Carica immagine</span>
-                          <input accept="image/*" name="imageFile" type="file" />
-                        </label>
-                        <label>
-                          <span>Allergeni</span>
-                          <input name="allergens" placeholder="Glutine, lattosio" type="text" />
-                        </label>
-                        <label>
-                          <span>Ordine</span>
-                          <input
-                            defaultValue={(section.allItems.at(-1)?.sortOrder || 0) + 10}
-                            name="sortOrder"
-                            type="number"
-                          />
-                        </label>
-                      </div>
-                      <label className={menuAvailabilityToggleClasses(true)}>
-                        <input defaultChecked name="available" type="checkbox" />
-                        <span>Disponibile</span>
-                      </label>
-                      <p className="helper-copy">
-                        Se carichi un file, verra&apos; salvato direttamente nel sistema fino a {getInlineImageUploadLimitLabel()}.
-                      </p>
-                      <button className="button button-primary" type="submit">
-                        Salva piatto
-                      </button>
-                    </form>
-                  </AdminDialog>
-                </div>
-              ) : null}
-
-              {section.items.length ? (
-                <div className="menu-table">
-                  <div className="menu-table-head">
-                    <span>Foto</span>
-                    <span>Piatto</span>
-                    <span>Prezzo</span>
-                    <span>Stato</span>
-                    <span>Allergeni</span>
-                    <span>Ordine</span>
-                    <span>Azioni</span>
-                  </div>
-
-                  {section.items.map((item) => (
-                    <article className="menu-table-row" key={item.id}>
-                      <div className="menu-table-photo">
-                        <MenuItemPreview item={item} />
-                      </div>
-
-                      <div className="menu-table-main">
-                        <span className="menu-cell-label">Piatto</span>
-                        <strong>{item.name}</strong>
-                        <p>{item.description || "Nessuna descrizione impostata."}</p>
-                        {item.imageUrl ? <span className="location-chip">Con immagine</span> : null}
-                      </div>
-
-                      <div className="menu-table-price">
-                        <span className="menu-cell-label">Prezzo</span>
-                        <strong className="menu-price">{euro(item.price)}</strong>
-                      </div>
-
-                      <div className="menu-table-status">
-                        <span className="menu-cell-label">Stato</span>
-                        <span className={menuAvailabilityClasses(item.available)}>
-                          {item.available ? "Disponibile" : "Non disponibile"}
-                        </span>
-                      </div>
-
-                      <div className="menu-table-allergens">
-                        <span className="menu-cell-label">Allergeni</span>
-                        <span>{item.allergens || "Nessuno"}</span>
-                      </div>
-
-                      <div className="menu-table-order">
-                        <span className="menu-cell-label">Ordine</span>
-                        <span>{item.sortOrder}</span>
-                      </div>
-
-                      <div className="menu-table-actions">
-                        <span className="menu-cell-label">Azioni</span>
-                        {canManageMenus ? (
-                          <AdminDialog
-                            buttonLabel="Modifica"
-                            description="Aggiorna i dettagli del piatto e la media associata."
-                            title={`Modifica ${item.name}`}
-                          >
-                            <form action={saveMenuItemAction} className="entity-form">
-                              <input name="itemId" type="hidden" value={item.id} />
-                              <input name="sectionId" type="hidden" value={section.id} />
-                              <div className="form-grid">
-                                <label>
-                                  <span>Piatto</span>
-                                  <input defaultValue={item.name} name="name" type="text" />
-                                </label>
-                                <label>
-                                  <span>Prezzo</span>
-                                  <input defaultValue={item.price} name="price" step="0.01" type="number" />
-                                </label>
-                                <label className="full-width">
-                                  <span>Descrizione</span>
-                                  <input defaultValue={item.description || ""} name="description" type="text" />
-                                </label>
-                                <label className="full-width">
-                                  <span>URL media</span>
-                                  <input
-                                    defaultValue={item.imageUrl || ""}
-                                    name="imageUrl"
-                                    placeholder="https://... oppure data:..."
-                                    type="text"
-                                  />
-                                </label>
-                                <label className="full-width">
-                                  <span>Carica immagine</span>
-                                  <input accept="image/*" name="imageFile" type="file" />
-                                </label>
-                                <label>
-                                  <span>Allergeni</span>
-                                  <input defaultValue={item.allergens || ""} name="allergens" type="text" />
-                                </label>
-                                <label>
-                                  <span>Ordine</span>
-                                  <input defaultValue={item.sortOrder} name="sortOrder" type="number" />
-                                </label>
-                              </div>
-                              <div className="entity-footer">
-                                <label className="checkbox-item">
-                                  <input name="removeImage" type="checkbox" />
-                                  <span>Rimuovi media esistente</span>
-                                </label>
-                                <label className={menuAvailabilityToggleClasses(item.available)}>
-                                  <input defaultChecked={item.available} name="available" type="checkbox" />
-                                  <span>{item.available ? "Disponibile" : "Non disponibile"}</span>
-                                </label>
-                                <button className="button button-primary" type="submit">
-                                  Aggiorna piatto
-                                </button>
-                              </div>
-                              <p className="helper-copy">
-                                Il file caricato sostituisce l&apos;URL. Se selezioni "Rimuovi media", la preview viene svuotata.
-                              </p>
-                            </form>
-                          </AdminDialog>
-                        ) : (
-                          <span className="helper-copy">Sola lettura</span>
-                        )}
-                      </div>
-                    </article>
-                  ))}
-                </div>
-              ) : (
-                <p className="empty-copy">Nessun piatto visibile in questa sezione con i filtri attivi.</p>
-              )}
-            </div>
-          </details>
         ))}
-
-        {filteredSections.length === 0 ? (
-          <p className="empty-copy">Nessun risultato con i filtri attivi. Prova a cambiare sezione o disponibilita'.</p>
-        ) : null}
       </div>
+
+      {workspaceView === "overview" ? (
+        <div className="menu-workspace-stack">
+          <div className="menu-summary-grid">
+            <article className="summary-chip">
+              <strong>{selectedMenu.sections.length}</strong>
+              <span>Sezioni attive</span>
+            </article>
+            <article className="summary-chip">
+              <strong>{countMenuItems(selectedMenu)}</strong>
+              <span>Piatti catalogati</span>
+            </article>
+            <article className="summary-chip">
+              <strong>{selectedMenu.isActive ? "Attivo" : "Bozza"}</strong>
+              <span>Stato pubblicazione</span>
+            </article>
+            <article className="summary-chip">
+              <strong>{selectedMenu.deliveryEnabled ? "Delivery" : "Sala"}</strong>
+              <span>Canale primario</span>
+            </article>
+          </div>
+
+          {renderSectionQuickActions(selectedMenu, canManageMenus)}
+
+          <section className="menu-section-outline">
+            <div className="panel-header">
+              <div>
+                <h3>Struttura del menu</h3>
+                <p>Vista rapida delle sezioni attive con ordine, volume e stato.</p>
+              </div>
+            </div>
+
+            <div className="menu-section-outline-list">
+              {selectedMenu.sections.map((section) => (
+                <article className="menu-section-outline-row" key={section.id}>
+                  <div>
+                    <strong>{section.name}</strong>
+                    <p>{section.items.length} piatti collegati</p>
+                  </div>
+                  <div className="row-meta">
+                    <span>Ordine {section.sortOrder}</span>
+                    <strong>
+                      {section.items.filter((item) => item.available).length}/{section.items.length} disponibili
+                    </strong>
+                  </div>
+                </article>
+              ))}
+
+              {selectedMenu.sections.length === 0 ? (
+                <p className="empty-copy">Nessuna sezione configurata per questo menu.</p>
+              ) : null}
+            </div>
+          </section>
+        </div>
+      ) : null}
+
+      {workspaceView === "distribution" ? (
+        <div className="menu-workspace-stack">
+          <section className="menu-distribution-grid">
+            <article className="summary-chip">
+              <strong>{selectedMenu.appliesToAllLocations ? "Tutte le sedi" : selectedMenu.locationSummary}</strong>
+              <span>Copertura sedi</span>
+            </article>
+            <article className="summary-chip">
+              <strong>{selectedMenu.deliveryEnabled ? "Abilitato" : "Disattivo"}</strong>
+              <span>Delivery</span>
+            </article>
+            <article className="summary-chip">
+              <strong>{selectedMenu.isActive ? "Pubblicato" : "Non pubblicato"}</strong>
+              <span>Stato menu</span>
+            </article>
+          </section>
+
+          <section className="menu-section-outline">
+            <div className="panel-header">
+              <div>
+                <h3>Sedi assegnate</h3>
+                <p>Il menu puo essere pubblicato su una, piu sedi o su tutte.</p>
+              </div>
+            </div>
+
+            <div className="location-chip-list">
+              {selectedMenu.appliesToAllLocations
+                ? locations.map((location) => (
+                    <span className="location-chip highlighted" key={`${selectedMenu.id}-${location.id}`}>
+                      {location.name}
+                    </span>
+                  ))
+                : selectedMenu.assignedLocationIds.map((locationId) => {
+                    const location = locations.find((candidate) => candidate.id === locationId);
+                    return location ? (
+                      <span className="location-chip highlighted" key={`${selectedMenu.id}-${location.id}`}>
+                        {location.name}
+                      </span>
+                    ) : null;
+                  })}
+            </div>
+
+            <p className="helper-copy">
+              La distribuzione del menu si modifica dal comando <strong>Modifica menu</strong>,
+              dove puoi assegnarlo a una sede, piu sedi o a tutto il network consentito.
+            </p>
+          </section>
+        </div>
+      ) : null}
+
+      {workspaceView === "items" ? (
+        <>
+          {renderSectionQuickActions(selectedMenu, canManageMenus)}
+
+          <div className="reservation-toolbar menu-filter-toolbar">
+            <label className="search-input-shell">
+              <span className="sr-only">Cerca piatto</span>
+              <input
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Cerca piatto, descrizione o allergeni"
+                type="search"
+                value={searchQuery}
+              />
+            </label>
+
+            <div className="menu-filter-grid">
+              <label>
+                <span>Sezione</span>
+                <select onChange={(event) => setSectionFilter(event.target.value)} value={sectionFilter}>
+                  <option value="ALL">Tutte le sezioni</option>
+                  {selectedMenu.sections.map((section) => (
+                    <option key={section.id} value={section.id}>
+                      {section.name}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                <span>Disponibilita'</span>
+                <select onChange={(event) => setAvailabilityFilter(event.target.value)} value={availabilityFilter}>
+                  <option value="ALL">Tutti i piatti</option>
+                  <option value="AVAILABLE">Solo disponibili</option>
+                  <option value="UNAVAILABLE">Solo non disponibili</option>
+                </select>
+              </label>
+            </div>
+          </div>
+
+          <div className="menu-filter-summary">
+            <p>
+              {visibleItems} piatti visibili in {filteredSections.length} sezioni
+              {deferredQuery ? ` per "${searchQuery.trim()}"` : ""}.
+            </p>
+            {hasActiveFilters ? (
+              <button className="button button-muted" onClick={resetFilters} type="button">
+                Azzera filtri
+              </button>
+            ) : null}
+          </div>
+
+          <div className="menu-accordion-stack">
+            {filteredSections.map((section, index) => (
+              <details className="menu-accordion" key={section.id} open={hasActiveFilters || index === 0}>
+                <summary className="menu-accordion-summary">
+                  <div className="menu-accordion-copy">
+                    <strong>{section.name}</strong>
+                    <p>{section.items.length} piatti visibili in questa sezione</p>
+                  </div>
+                  <div className="menu-accordion-meta">
+                    <span className="location-chip">Ordine {section.sortOrder}</span>
+                  </div>
+                </summary>
+
+                <div className="menu-accordion-body">
+                  {canManageMenus ? (
+                    <div className="page-actions">
+                      <AdminDialog
+                        buttonLabel="Modifica sezione"
+                        description="Rinomina la sezione o cambia il suo ordine nel menu."
+                        title={`Modifica ${section.name}`}
+                      >
+                        <form action={saveMenuSectionAction} className="entity-form">
+                          <input name="menuId" type="hidden" value={selectedMenu.id} />
+                          <input name="sectionId" type="hidden" value={section.id} />
+                          <div className="form-grid">
+                            <label>
+                              <span>Nome sezione</span>
+                              <input defaultValue={section.name} name="name" type="text" />
+                            </label>
+                            <label>
+                              <span>Ordine</span>
+                              <input defaultValue={section.sortOrder} name="sortOrder" type="number" />
+                            </label>
+                          </div>
+                          <button className="button button-primary" type="submit">
+                            Aggiorna sezione
+                          </button>
+                        </form>
+                      </AdminDialog>
+
+                      <AdminDialog
+                        buttonLabel="Nuovo piatto"
+                        description="Aggiungi piatto, prezzo, allergeni e media da URL o file."
+                        title={`Nuovo piatto in ${section.name}`}
+                      >
+                        <form action={saveMenuItemAction} className="entity-form">
+                          <input name="sectionId" type="hidden" value={section.id} />
+                          <div className="form-grid">
+                            <label>
+                              <span>Piatto</span>
+                              <input name="name" placeholder="Risotto al limone" required type="text" />
+                            </label>
+                            <label>
+                              <span>Prezzo</span>
+                              <input defaultValue="0" name="price" step="0.01" type="number" />
+                            </label>
+                            <label className="full-width">
+                              <span>Descrizione</span>
+                              <input name="description" placeholder="Descrizione piatto" type="text" />
+                            </label>
+                            <label className="full-width">
+                              <span>URL media</span>
+                              <input name="imageUrl" placeholder="https://... oppure data:..." type="text" />
+                            </label>
+                            <label className="full-width">
+                              <span>Carica immagine</span>
+                              <input accept="image/*" name="imageFile" type="file" />
+                            </label>
+                            <label>
+                              <span>Allergeni</span>
+                              <input name="allergens" placeholder="Glutine, lattosio" type="text" />
+                            </label>
+                            <label>
+                              <span>Ordine</span>
+                              <input
+                                defaultValue={(section.allItems.at(-1)?.sortOrder || 0) + 10}
+                                name="sortOrder"
+                                type="number"
+                              />
+                            </label>
+                          </div>
+                          <label className={menuAvailabilityToggleClasses(true)}>
+                            <input defaultChecked name="available" type="checkbox" />
+                            <span>Disponibile</span>
+                          </label>
+                          <p className="helper-copy">
+                            Se carichi un file, verra&apos; salvato direttamente nel sistema fino a {getInlineImageUploadLimitLabel()}.
+                          </p>
+                          <button className="button button-primary" type="submit">
+                            Salva piatto
+                          </button>
+                        </form>
+                      </AdminDialog>
+                    </div>
+                  ) : null}
+
+                  {section.items.length ? (
+                    <div className="menu-table">
+                      <div className="menu-table-head">
+                        <span>Foto</span>
+                        <span>Piatto</span>
+                        <span>Prezzo</span>
+                        <span>Stato</span>
+                        <span>Allergeni</span>
+                        <span>Ordine</span>
+                        <span>Azioni</span>
+                      </div>
+
+                      {section.items.map((item) => (
+                        <article className="menu-table-row" key={item.id}>
+                          <div className="menu-table-photo">
+                            <MenuItemPreview item={item} />
+                          </div>
+
+                          <div className="menu-table-main">
+                            <span className="menu-cell-label">Piatto</span>
+                            <strong>{item.name}</strong>
+                            <p>{item.description || "Nessuna descrizione impostata."}</p>
+                            {item.imageUrl ? <span className="location-chip">Con immagine</span> : null}
+                          </div>
+
+                          <div className="menu-table-price">
+                            <span className="menu-cell-label">Prezzo</span>
+                            <strong className="menu-price">{euro(item.price)}</strong>
+                          </div>
+
+                          <div className="menu-table-status">
+                            <span className="menu-cell-label">Stato</span>
+                            <span className={menuAvailabilityClasses(item.available)}>
+                              {item.available ? "Disponibile" : "Non disponibile"}
+                            </span>
+                          </div>
+
+                          <div className="menu-table-allergens">
+                            <span className="menu-cell-label">Allergeni</span>
+                            <span>{item.allergens || "Nessuno"}</span>
+                          </div>
+
+                          <div className="menu-table-order">
+                            <span className="menu-cell-label">Ordine</span>
+                            <span>{item.sortOrder}</span>
+                          </div>
+
+                          <div className="menu-table-actions">
+                            <span className="menu-cell-label">Azioni</span>
+                            {canManageMenus ? (
+                              <AdminDialog
+                                buttonLabel="Modifica"
+                                description="Aggiorna i dettagli del piatto e la media associata."
+                                title={`Modifica ${item.name}`}
+                              >
+                                <form action={saveMenuItemAction} className="entity-form">
+                                  <input name="itemId" type="hidden" value={item.id} />
+                                  <input name="sectionId" type="hidden" value={section.id} />
+                                  <div className="form-grid">
+                                    <label>
+                                      <span>Piatto</span>
+                                      <input defaultValue={item.name} name="name" type="text" />
+                                    </label>
+                                    <label>
+                                      <span>Prezzo</span>
+                                      <input defaultValue={item.price} name="price" step="0.01" type="number" />
+                                    </label>
+                                    <label className="full-width">
+                                      <span>Descrizione</span>
+                                      <input defaultValue={item.description || ""} name="description" type="text" />
+                                    </label>
+                                    <label className="full-width">
+                                      <span>URL media</span>
+                                      <input
+                                        defaultValue={item.imageUrl || ""}
+                                        name="imageUrl"
+                                        placeholder="https://... oppure data:..."
+                                        type="text"
+                                      />
+                                    </label>
+                                    <label className="full-width">
+                                      <span>Carica immagine</span>
+                                      <input accept="image/*" name="imageFile" type="file" />
+                                    </label>
+                                    <label>
+                                      <span>Allergeni</span>
+                                      <input defaultValue={item.allergens || ""} name="allergens" type="text" />
+                                    </label>
+                                    <label>
+                                      <span>Ordine</span>
+                                      <input defaultValue={item.sortOrder} name="sortOrder" type="number" />
+                                    </label>
+                                  </div>
+                                  <div className="entity-footer">
+                                    <label className="checkbox-item">
+                                      <input name="removeImage" type="checkbox" />
+                                      <span>Rimuovi media esistente</span>
+                                    </label>
+                                    <label className={menuAvailabilityToggleClasses(item.available)}>
+                                      <input defaultChecked={item.available} name="available" type="checkbox" />
+                                      <span>{item.available ? "Disponibile" : "Non disponibile"}</span>
+                                    </label>
+                                    <button className="button button-primary" type="submit">
+                                      Aggiorna piatto
+                                    </button>
+                                  </div>
+                                  <p className="helper-copy">
+                                    Il file caricato sostituisce l&apos;URL. Se selezioni "Rimuovi media", la preview viene svuotata.
+                                  </p>
+                                </form>
+                              </AdminDialog>
+                            ) : (
+                              <span className="helper-copy">Sola lettura</span>
+                            )}
+                          </div>
+                        </article>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="empty-copy">Nessun piatto visibile in questa sezione con i filtri attivi.</p>
+                  )}
+                </div>
+              </details>
+            ))}
+
+            {filteredSections.length === 0 ? (
+              <p className="empty-copy">Nessun risultato con i filtri attivi. Prova a cambiare sezione o disponibilita'.</p>
+            ) : null}
+          </div>
+        </>
+      ) : null}
     </article>
   );
 }
