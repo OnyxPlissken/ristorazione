@@ -15,109 +15,89 @@ const navigation = [
     href: "/admin",
     label: "Dashboard",
     page: "dashboard",
-    section: "Operativita",
-    sectionDescription: "Monitoraggio servizio, prenotazioni e performance.",
-    subsection: "Panoramica"
-  },
-  {
-    href: "/admin/sala",
-    label: "Sala",
-    page: "tables",
-    section: "Operativita",
-    sectionDescription: "Monitoraggio servizio, prenotazioni e performance.",
-    subsection: "Servizio"
+    section: "Principali",
+    isPrimary: true
   },
   {
     href: "/admin/prenotazioni",
     label: "Prenotazioni",
     page: "reservations",
-    section: "Operativita",
-    sectionDescription: "Monitoraggio servizio, prenotazioni e performance.",
-    subsection: "Servizio",
-    moduleKey: "reservations"
+    section: "Principali",
+    moduleKey: "reservations",
+    isPrimary: true
+  },
+  {
+    href: "/admin/sala",
+    label: "Sala",
+    page: "tables",
+    section: "Principali",
+    isPrimary: true
   },
   {
     href: "/admin/calendario",
     label: "Calendario",
     page: "reservations",
-    section: "Operativita",
-    sectionDescription: "Monitoraggio servizio, prenotazioni e performance.",
-    subsection: "Servizio",
+    section: "Principali",
     moduleKey: "reservations"
   },
   {
     href: "/admin/clienti",
     label: "CRM",
     page: "reservations",
-    section: "Operativita",
-    sectionDescription: "Monitoraggio servizio, prenotazioni e performance.",
-    subsection: "Clienti",
-    moduleKey: "customerScoring"
+    section: "Principali",
+    moduleKey: "customerScoring",
+    isPrimary: true
   },
   {
     href: "/admin/analytics",
     label: "Analytics",
     page: "dashboard",
-    section: "Operativita",
-    sectionDescription: "Monitoraggio servizio, prenotazioni e performance.",
-    subsection: "Clienti",
+    section: "Analisi",
     moduleKeysAny: ["reservations", "customerScoring", "smartWaitlist"]
   },
   {
     href: "/admin/registro",
     label: "Registro",
     page: "reservations",
-    section: "Operativita",
-    sectionDescription: "Monitoraggio servizio, prenotazioni e performance.",
-    subsection: "Clienti"
-  },
-  {
-    href: "/admin/sedi",
-    label: "Sedi",
-    page: "locations",
-    section: "Catalogo e locale",
-    sectionDescription: "Assetto del locale, catalogo e configurazione operativa.",
-    subsection: "Setup sede"
-  },
-  {
-    href: "/admin/tavoli",
-    label: "Tavoli",
-    page: "tables",
-    section: "Catalogo e locale",
-    sectionDescription: "Assetto del locale, catalogo e configurazione operativa.",
-    subsection: "Setup sede"
-  },
-  {
-    href: "/admin/orari",
-    label: "Orari",
-    page: "hours",
-    section: "Catalogo e locale",
-    sectionDescription: "Assetto del locale, catalogo e configurazione operativa.",
-    subsection: "Setup sede"
+    section: "Analisi"
   },
   {
     href: "/admin/menu",
     label: "Menu",
     page: "menus",
-    section: "Catalogo e locale",
-    sectionDescription: "Assetto del locale, catalogo e configurazione operativa.",
-    subsection: "Catalogo"
+    section: "Locale",
+    isPrimary: true
+  },
+  {
+    href: "/admin/tavoli",
+    label: "Tavoli",
+    page: "tables",
+    section: "Locale"
+  },
+  {
+    href: "/admin/orari",
+    label: "Orari",
+    page: "hours",
+    section: "Locale"
+  },
+  {
+    href: "/admin/sedi",
+    label: "Sedi",
+    page: "locations",
+    section: "Locale"
   },
   {
     href: "/admin/utenti",
     label: "Utenti",
     page: "users",
-    section: "Sistema",
-    sectionDescription: "Accessi, permessi e moduli tecnici del prodotto.",
-    subsection: "Accessi"
+    section: "Sistema"
   },
   {
     href: "/admin/console",
     label: "Console Admin",
     page: "console",
     section: "Sistema",
-    sectionDescription: "Accessi, permessi e moduli tecnici del prodotto.",
-    subsection: "Configurazione"
+    isPrimary: true
   }
 ];
 
