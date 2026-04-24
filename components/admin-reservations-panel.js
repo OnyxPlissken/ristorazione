@@ -1,15 +1,15 @@
 "use client";
 
+import Link from "next/link";
 import {
   startTransition,
   useActionState,
   useDeferredValue,
   useEffect,
-  useMemo,
   useState,
   useTransition
 } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { updateReservationAction } from "../lib/actions/admin-actions";
 import {
   CUSTOMER_SCORE_BAND_LABELS,
@@ -79,7 +79,20 @@ function applySavedFilterConfig(savedFilter, setters) {
   setters.setLocationFilter(String(filters.locationFilter || "ALL"));
 }
 
-function ReservationListItem({
+function ReservationStatusTab({ active, count, label, onClick }) {
+  return (
+    <button
+      className={active ? "reservation-status-tab active" : "reservation-status-tab"}
+      onClick={onClick}
+      type="button"
+    >
+      <strong>{label}</strong>
+      <span>{count}</span>
+    </button>
+  );
+}
+
+function ReservationTableRow({
   active,
   checked,
   onSelect,
@@ -94,11 +107,11 @@ function ReservationListItem({
 
   return (
     <button
-      className={active ? "reservation-list-item active" : "reservation-list-item"}
+      className={active ? "reservation-table-row active" : "reservation-table-row"}
       onClick={onSelect}
       type="button"
     >
-      <span className="reservation-row-cell reservation-checkbox-cell">
+      <span className="reservation-table-check">
         <input
           checked={checked}
           onChange={(event) => onToggle(event.target.checked)}
@@ -106,28 +119,33 @@ function ReservationListItem({
           type="checkbox"
         />
       </span>
-      <span className="reservation-row-cell reservation-row-primary">
+
+      <span className="reservation-table-main">
         <strong>{reservation.guestName}</strong>
-        <small>
-          {contactLabel}
-          {customerBand
-            ? ` / ${CUSTOMER_SCORE_BAND_LABELS[customerBand] || customerBand}`
-            : ""}
-        </small>
+        <small>{contactLabel}</small>
       </span>
-      <span className="reservation-row-cell">
+
+      <span className="reservation-table-cell">
         <strong>{formatDateTime(reservation.dateTime)}</strong>
-        <small>{RESERVATION_SOURCE_LABELS[reservation.source] || reservation.source}</small>
-      </span>
-      <span className="reservation-row-cell">
-        <strong>{reservation.locationName}</strong>
         <small>{reservation.guests} coperti</small>
       </span>
-      <span className="reservation-row-cell">
+
+      <span className="reservation-table-cell">
+        <strong>{reservation.locationName}</strong>
+        <small>{RESERVATION_SOURCE_LABELS[reservation.source] || reservation.source}</small>
+      </span>
+
+      <span className="reservation-table-cell">
         <strong>{assignedTableLabel}</strong>
         <small>{reservation.notes ? "Con note" : "Nessuna nota"}</small>
       </span>
-      <span className="reservation-row-cell reservation-row-status">
+
+      <span className="reservation-table-status">
+        {customerBand ? (
+          <span className={`customer-band-chip ${customerBandTone(customerBand)}`}>
+            {CUSTOMER_SCORE_BAND_LABELS[customerBand] || customerBand}
+          </span>
+        ) : null}
         <span className={`table-status-chip ${statusTone(reservation.status)}`}>
           {RESERVATION_STATUS_LABELS[reservation.status] || reservation.status}
         </span>
@@ -136,17 +154,32 @@ function ReservationListItem({
   );
 }
 
-function ReservationDetailPanel({ canManageReservations, reservation }) {
+function ReservationInspector({ canManageReservations, reservation }) {
   const [state, action, pending] = useActionState(
     updateReservationAction,
     actionInitialState
   );
+  const router = useRouter();
+
+  useEffect(() => {
+    if (!state.success) {
+      return undefined;
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      router.refresh();
+    }, 700);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [router, state.success]);
 
   if (!reservation) {
     return (
-      <section className="section-card reservation-detail-empty">
+      <section className="section-card reservation-inspector-card reservation-inspector-empty">
         <strong>Nessuna prenotazione selezionata</strong>
-        <p>Scegli una prenotazione dalla lista per vedere dettaglio, pagamento e azioni.</p>
+        <p>
+          Scegli una riga dalla tabella per vedere cliente, tavolo, deposito, storico e azioni.
+        </p>
       </section>
     );
   }
@@ -157,18 +190,20 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
   const customerProfile = reservation.customerProfileSummary;
 
   return (
-    <section className="section-card reservation-detail-panel">
+    <section className="section-card reservation-inspector-card">
       <form action={action} className="entity-form">
         <input name="reservationId" type="hidden" value={reservation.id} />
+
         <fieldset className="form-fieldset" disabled={!canManageReservations || pending}>
-          <div className="panel-header">
+          <div className="reservation-inspector-header">
             <div>
               <h2>{reservation.guestName}</h2>
               <p>
                 {reservation.locationName} / {formatDateTime(reservation.dateTime)}
               </p>
             </div>
-            <div className="reservation-header-badges">
+
+            <div className="reservation-inspector-badges">
               {customerProfile?.band ? (
                 <span className={`customer-band-chip ${customerBandTone(customerProfile.band)}`}>
                   {CUSTOMER_SCORE_BAND_LABELS[customerProfile.band] || customerProfile.band}
@@ -180,108 +215,137 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
             </div>
           </div>
 
-          <div className="reservation-detail-grid">
-            <div className="reservation-detail-cell">
-              <span>Coperti</span>
-              <strong>{reservation.guests}</strong>
+          <div className="reservation-inspector-section">
+            <div className="reservation-inspector-section-head">
+              <strong>Riepilogo</strong>
             </div>
-            <div className="reservation-detail-cell">
-              <span>Tavolo</span>
-              <strong>{assignedTableLabel}</strong>
-            </div>
-            <div className="reservation-detail-cell">
-              <span>Origine</span>
-              <strong>{RESERVATION_SOURCE_LABELS[reservation.source] || reservation.source}</strong>
-            </div>
-            <div className="reservation-detail-cell">
-              <span>Email</span>
-              <strong>{reservation.guestEmail || "Non disponibile"}</strong>
-            </div>
-            <div className="reservation-detail-cell">
-              <span>Telefono</span>
-              <strong>{reservation.guestPhone || "Non disponibile"}</strong>
-            </div>
-            <div className="reservation-detail-cell">
-              <span>Link gestione</span>
-              <strong>{reservation.manageToken ? "Disponibile" : "Non generato"}</strong>
-            </div>
-            <div className="reservation-detail-cell">
-              <span>Priorita cliente</span>
-              <strong>{customerProfile?.priorityScore ?? reservation.customerPriorityScore ?? 0}</strong>
-            </div>
-            <div className="reservation-detail-cell">
-              <span>Deposito</span>
-              <strong>
-                {reservation.depositRequired
-                  ? reservation.depositAmount
-                    ? `EUR ${Number(reservation.depositAmount).toFixed(2)}`
-                    : "Richiesto"
-                  : "Non richiesto"}
-              </strong>
+
+            <div className="reservation-inspector-grid">
+              <div className="reservation-inspector-card-mini">
+                <span>Coperti</span>
+                <strong>{reservation.guests}</strong>
+              </div>
+              <div className="reservation-inspector-card-mini">
+                <span>Tavolo</span>
+                <strong>{assignedTableLabel}</strong>
+              </div>
+              <div className="reservation-inspector-card-mini">
+                <span>Origine</span>
+                <strong>{RESERVATION_SOURCE_LABELS[reservation.source] || reservation.source}</strong>
+              </div>
+              <div className="reservation-inspector-card-mini">
+                <span>Email</span>
+                <strong>{reservation.guestEmail || "Non disponibile"}</strong>
+              </div>
+              <div className="reservation-inspector-card-mini">
+                <span>Telefono</span>
+                <strong>{reservation.guestPhone || "Non disponibile"}</strong>
+              </div>
+              <div className="reservation-inspector-card-mini">
+                <span>Link gestione</span>
+                <strong>{reservation.manageToken ? "Disponibile" : "Non generato"}</strong>
+              </div>
             </div>
           </div>
 
           {customerProfile ? (
-            <div className="customer-profile-summary">
-              <div>
-                <span>Storico</span>
-                <strong>{customerProfile.completedReservations} completate</strong>
+            <div className="reservation-inspector-section">
+              <div className="reservation-inspector-section-head">
+                <strong>Profilo cliente</strong>
               </div>
-              <div>
-                <span>No-show</span>
-                <strong>{customerProfile.noShowCount}</strong>
-              </div>
-              <div>
-                <span>Affidabilita</span>
-                <strong>{customerProfile.reliabilityScore}/100</strong>
-              </div>
-              <div>
-                <span>Spesa media</span>
-                <strong>
-                  {customerProfile.averageSpend
-                    ? `EUR ${Number(customerProfile.averageSpend).toFixed(0)}`
-                    : "n.d."}
-                </strong>
+
+              <div className="reservation-inspector-grid compact">
+                <div className="reservation-inspector-card-mini">
+                  <span>Priorita</span>
+                  <strong>{customerProfile.priorityScore}</strong>
+                </div>
+                <div className="reservation-inspector-card-mini">
+                  <span>Affidabilita</span>
+                  <strong>{customerProfile.reliabilityScore}/100</strong>
+                </div>
+                <div className="reservation-inspector-card-mini">
+                  <span>Storico</span>
+                  <strong>{customerProfile.completedReservations} completate</strong>
+                </div>
+                <div className="reservation-inspector-card-mini">
+                  <span>No-show</span>
+                  <strong>{customerProfile.noShowCount}</strong>
+                </div>
+                <div className="reservation-inspector-card-mini">
+                  <span>Spesa media</span>
+                  <strong>
+                    {customerProfile.averageSpend
+                      ? `EUR ${Number(customerProfile.averageSpend).toFixed(0)}`
+                      : "n.d."}
+                  </strong>
+                </div>
+                <div className="reservation-inspector-card-mini">
+                  <span>Deposito</span>
+                  <strong>
+                    {reservation.depositRequired
+                      ? reservation.depositAmount
+                        ? `EUR ${Number(reservation.depositAmount).toFixed(2)}`
+                        : "Richiesto"
+                      : "Non richiesto"}
+                  </strong>
+                </div>
               </div>
             </div>
           ) : null}
 
-          <div className="reservation-editor-grid">
-            <label>
-              <span>Stato</span>
-              <select defaultValue={reservation.status} name="status">
-                {Object.entries(RESERVATION_STATUS_LABELS).map(([value, label]) => (
-                  <option key={value} value={value}>
-                    {label}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>Tavolo</span>
-              <select defaultValue={reservation.tableId || ""} name="tableId">
-                <option value="">Assegna automaticamente</option>
-                {reservation.availableTables.map((table) => (
-                  <option key={table.id} value={table.id}>
-                    {table.code} - {table.seats} coperti
-                  </option>
-                ))}
-              </select>
-            </label>
-            <label>
-              <span>Spesa registrata</span>
-              <input
-                defaultValue={reservation.spendAmount || ""}
-                min="0"
-                name="spendAmount"
-                step="0.01"
-                type="number"
-              />
-            </label>
+          <div className="reservation-inspector-section">
+            <div className="reservation-inspector-section-head">
+              <strong>Azioni</strong>
+              {reservation.manageToken ? (
+                <Link
+                  className="button button-muted"
+                  href={`/prenotazione/${reservation.manageToken}`}
+                  target="_blank"
+                >
+                  Apri link cliente
+                </Link>
+              ) : null}
+            </div>
+
+            <div className="reservation-inspector-form">
+              <label>
+                <span>Stato</span>
+                <select defaultValue={reservation.status} name="status">
+                  {Object.entries(RESERVATION_STATUS_LABELS).map(([value, label]) => (
+                    <option key={value} value={value}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                <span>Tavolo</span>
+                <select defaultValue={reservation.tableId || ""} name="tableId">
+                  <option value="">Assegna automaticamente</option>
+                  {reservation.availableTables.map((table) => (
+                    <option key={table.id} value={table.id}>
+                      {table.code} - {table.seats} coperti
+                    </option>
+                  ))}
+                </select>
+              </label>
+
+              <label>
+                <span>Spesa registrata</span>
+                <input
+                  defaultValue={reservation.spendAmount || ""}
+                  min="0"
+                  name="spendAmount"
+                  step="0.01"
+                  type="number"
+                />
+              </label>
+            </div>
           </div>
 
           {reservation.notes ? (
-            <div className="note-box">
+            <div className="note-box reservation-notes-box">
               <strong>Note cliente</strong>
               <p>{reservation.notes}</p>
             </div>
@@ -293,11 +357,11 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
           <div className="entity-footer">
             <span>
               {canManageReservations
-                ? "Le modifiche aggiornano stato, assegnazione, reminder e deposito."
-                : "Il tuo profilo puo consultare ma non modificare la prenotazione."}
+                ? "Il salvataggio aggiorna stato, tavolo, reminder e deposito."
+                : "Profilo in sola lettura."}
             </span>
             <button className="button button-primary" type="submit">
-              {pending ? "Aggiornamento..." : "Aggiorna prenotazione"}
+              {pending ? "Aggiornamento..." : "Salva modifiche"}
             </button>
           </div>
         </fieldset>
@@ -312,6 +376,9 @@ export default function AdminReservationsPanel({
   canManageReservations
 }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const searchParamsKey = searchParams?.toString() || "";
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
   const [locationFilter, setLocationFilter] = useState("ALL");
@@ -326,24 +393,21 @@ export default function AdminReservationsPanel({
   const deferredQuery = useDeferredValue(query);
   const normalizedQuery = deferredQuery.trim().toLowerCase();
   const now = new Date();
-  const allViewReservations = reservations.filter((reservation) =>
+
+  const allVisibleReservations = reservations.filter((reservation) =>
     isVisibleInAllView(reservation, now)
   );
-  const counts = reservations.reduce(
-    (accumulator, reservation) => ({
-      ...accumulator,
-      [reservation.status]: (accumulator[reservation.status] || 0) + 1
-    }),
-    { ALL: allViewReservations.length }
-  );
+  const counts = { ALL: allVisibleReservations.length };
 
-  const locationOptions = useMemo(
-    () =>
-      [...new Map(reservations.map((reservation) => [reservation.locationId, reservation.locationName])).entries()].map(
-        ([value, label]) => ({ value, label })
-      ),
-    [reservations]
-  );
+  for (const reservation of reservations) {
+    counts[reservation.status] = (counts[reservation.status] || 0) + 1;
+  }
+
+  const locationOptions = [
+    ...new Map(
+      reservations.map((reservation) => [reservation.locationId, reservation.locationName])
+    ).entries()
+  ].map(([value, label]) => ({ value, label }));
 
   const filteredReservations = reservations.filter((reservation) => {
     const matchesStatus =
@@ -392,7 +456,10 @@ export default function AdminReservationsPanel({
   }, []);
 
   useEffect(() => {
-    if (initialSelectedReservationId && reservations.some((reservation) => reservation.id === initialSelectedReservationId)) {
+    if (
+      initialSelectedReservationId &&
+      reservations.some((reservation) => reservation.id === initialSelectedReservationId)
+    ) {
       setSelectedReservationId(initialSelectedReservationId);
     }
   }, [initialSelectedReservationId, reservations]);
@@ -407,6 +474,20 @@ export default function AdminReservationsPanel({
       setSelectedReservationId(filteredReservations[0].id);
     }
   }, [filteredReservations, selectedReservationId]);
+
+  useEffect(() => {
+    const params = new URLSearchParams(searchParamsKey);
+
+    if (selectedReservationId) {
+      params.set("reservationId", selectedReservationId);
+    } else {
+      params.delete("reservationId");
+    }
+
+    router.replace(`${pathname}?${params.toString()}`, {
+      scroll: false
+    });
+  }, [pathname, router, searchParamsKey, selectedReservationId]);
 
   const selectedReservation =
     filteredReservations.find((reservation) => reservation.id === selectedReservationId) || null;
@@ -519,20 +600,39 @@ export default function AdminReservationsPanel({
   }
 
   return (
-    <section className="panel-card">
-      <div className="panel-header">
+    <section className="panel-card reservation-page-shell">
+      <div className="panel-header reservation-page-header">
         <div>
-          <h2>Gestione prenotazioni</h2>
-          <p>Lista operativa, filtri salvati per ruolo/sede e azioni bulk su selezione multipla.</p>
+          <h2>Prenotazioni</h2>
+          <p>Vista operativa con tabella, filtri rapidi e inspector laterale.</p>
         </div>
         <div className="row-meta">
           <span>{filteredReservations.length} risultati</span>
-          <span>{allViewReservations.length} visibili in Tutte</span>
+          <span>{allVisibleReservations.length} in vista Tutte</span>
         </div>
       </div>
 
-      <div className="reservation-toolbar">
-        <label className="search-input-shell">
+      <div className="reservation-summary-strip">
+        <div className="reservation-summary-card">
+          <span>In attesa</span>
+          <strong>{counts.IN_ATTESA || 0}</strong>
+        </div>
+        <div className="reservation-summary-card">
+          <span>Confermate</span>
+          <strong>{counts.CONFERMATA || 0}</strong>
+        </div>
+        <div className="reservation-summary-card">
+          <span>In corso</span>
+          <strong>{counts.IN_CORSO || 0}</strong>
+        </div>
+        <div className="reservation-summary-card">
+          <span>Completate</span>
+          <strong>{counts.COMPLETATA || 0}</strong>
+        </div>
+      </div>
+
+      <div className="reservation-toolbar reservation-toolbar-compact">
+        <label className="search-input-shell reservation-search">
           <span className="sr-only">Cerca prenotazione</span>
           <input
             onChange={(event) => {
@@ -541,15 +641,15 @@ export default function AdminReservationsPanel({
                 setQuery(value);
               });
             }}
-            placeholder="Cerca per nome, email, telefono o tavolo"
+            placeholder="Cerca per cliente, email, telefono, tavolo o note"
             type="search"
             value={query}
           />
         </label>
 
-        <div className="menu-filter-grid">
+        <div className="reservation-filter-cluster">
           <label>
-            <span className="sr-only">Sede</span>
+            <span>Sede</span>
             <select
               onChange={(event) => setLocationFilter(event.target.value)}
               value={locationFilter}
@@ -562,8 +662,9 @@ export default function AdminReservationsPanel({
               ))}
             </select>
           </label>
+
           <label>
-            <span className="sr-only">Filtro salvato</span>
+            <span>Filtro salvato</span>
             <select
               onChange={(event) => {
                 const nextId = event.target.value;
@@ -580,7 +681,7 @@ export default function AdminReservationsPanel({
               }}
               value={savedFilterId}
             >
-              <option value="">Filtri salvati</option>
+              <option value="">Nessun filtro</option>
               {savedFilters.map((filter) => (
                 <option key={filter.id} value={filter.id}>
                   {filter.name}
@@ -590,7 +691,7 @@ export default function AdminReservationsPanel({
           </label>
         </div>
 
-        <div className="micro-actions">
+        <div className="micro-actions reservation-toolbar-actions">
           <button className="button button-muted" onClick={saveCurrentFilter} type="button">
             Salva filtro
           </button>
@@ -602,25 +703,19 @@ export default function AdminReservationsPanel({
         </div>
       </div>
 
-      <div className="status-filter-grid">
+      <div className="reservation-status-strip">
         {statusOrder.map((status) => (
-          <button
-            className={
-              statusFilter === status
-                ? "status-filter-button active"
-                : "status-filter-button"
-            }
+          <ReservationStatusTab
+            active={statusFilter === status}
+            count={counts[status] || 0}
             key={status}
+            label={status === "ALL" ? "Tutte" : RESERVATION_STATUS_LABELS[status]}
             onClick={() => {
               startTransition(() => {
                 setStatusFilter(status);
               });
             }}
-            type="button"
-          >
-            <strong>{status === "ALL" ? "Tutte" : RESERVATION_STATUS_LABELS[status]}</strong>
-            <span>{counts[status] || 0}</span>
-          </button>
+          />
         ))}
       </div>
 
@@ -654,45 +749,65 @@ export default function AdminReservationsPanel({
         </p>
       ) : null}
 
-      <div className="reservation-workspace">
-        <div className="reservation-list-shell">
-          <div className="reservation-list-head reservation-list-grid-head">
-            <span>
-              <input
-                checked={allVisibleSelected}
-                onChange={(event) => toggleAllVisible(event.target.checked)}
-                type="checkbox"
-              />
-            </span>
-            <span>Cliente</span>
-            <span>Arrivo</span>
-            <span>Sede</span>
-            <span>Tavolo</span>
-            <span>Stato</span>
-          </div>
+      <div className="reservation-main-grid">
+        <section className="section-card reservation-table-card">
+          <div className="reservation-table-toolbar">
+            <div>
+              <strong>Lista operativa</strong>
+              <p>
+                Seleziona una prenotazione per lavorare nel pannello dettaglio. Le cancellate
+                restano fuori da <strong>Tutte</strong>.
+              </p>
+            </div>
 
-          <div className="reservation-list">
-            {filteredReservations.map((reservation) => (
-              <ReservationListItem
-                active={reservation.id === selectedReservationId}
-                checked={selectedReservationIds.includes(reservation.id)}
-                key={reservation.id}
-                onSelect={() => setSelectedReservationId(reservation.id)}
-                onToggle={(checked) => toggleReservationSelection(reservation.id, checked)}
-                reservation={reservation}
-              />
-            ))}
-
-            {filteredReservations.length === 0 ? (
-              <div className="empty-state-card">
-                <strong>Nessuna prenotazione nei filtri correnti</strong>
-                <p>Prova a cambiare stato, sede o ricerca libera. Puoi anche salvare una vista piu' utile per il tuo ruolo.</p>
-              </div>
+            {filteredReservations.length > 0 ? (
+              <label className="reservation-select-all">
+                <input
+                  checked={allVisibleSelected}
+                  onChange={(event) => toggleAllVisible(event.target.checked)}
+                  type="checkbox"
+                />
+                <span>Seleziona visibili</span>
+              </label>
             ) : null}
           </div>
-        </div>
 
-        <ReservationDetailPanel
+          {filteredReservations.length === 0 ? (
+            <div className="empty-state-card">
+              <strong>Nessuna prenotazione nei filtri correnti</strong>
+              <p>
+                Cambia stato, sede o ricerca libera. Se trovi spesso la stessa vista, salvala e
+                riusala dal filtro rapido.
+              </p>
+            </div>
+          ) : (
+            <div className="reservation-table-shell">
+              <div className="reservation-table-head">
+                <span />
+                <span>Cliente</span>
+                <span>Arrivo</span>
+                <span>Sede</span>
+                <span>Tavolo</span>
+                <span>Stato</span>
+              </div>
+
+              <div className="reservation-table-body">
+                {filteredReservations.map((reservation) => (
+                  <ReservationTableRow
+                    active={reservation.id === selectedReservationId}
+                    checked={selectedReservationIds.includes(reservation.id)}
+                    key={reservation.id}
+                    onSelect={() => setSelectedReservationId(reservation.id)}
+                    onToggle={(checked) => toggleReservationSelection(reservation.id, checked)}
+                    reservation={reservation}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
+        </section>
+
+        <ReservationInspector
           canManageReservations={canManageReservations}
           reservation={selectedReservation}
         />
