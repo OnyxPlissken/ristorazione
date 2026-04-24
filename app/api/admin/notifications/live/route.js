@@ -14,6 +14,8 @@ export async function GET() {
     return Response.json({ error: "Non autorizzato" }, { status: 403 });
   }
 
-  const summary = await getAdminNotificationSummary(user);
+  const summary = await getAdminNotificationSummary(user, {
+    locationId: user.activeLocationId || ""
+  });
   return Response.json(summary);
 }

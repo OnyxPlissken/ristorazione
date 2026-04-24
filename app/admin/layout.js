@@ -1,4 +1,8 @@
 import AdminChrome from "../../components/admin-chrome";
+import {
+  getAccessibleLocationOptions,
+  resolveActiveLocation
+} from "../../lib/active-location";
 import { getAdminNotificationSummary } from "../../lib/admin-notifications";
 import { requireUser, roleLabel } from "../../lib/auth";
 import { summarizeLocationModules } from "../../lib/location-modules";
@@ -121,23 +125,35 @@ function matchesModuleVisibility(item, moduleSummary) {
 
 export default async function AdminLayout({ children }) {
   const user = await requireUser();
-  const accessibleLocationModules = await getAccessibleLocationModules(user);
-  const moduleSummary = summarizeLocationModules(accessibleLocationModules);
+  const [locationOptions, accessibleLocationModules] = await Promise.all([
+    getAccessibleLocationOptions(user),
+    getAccessibleLocationModules(user)
+  ]);
+  const { activeLocation, activeLocationId } = await resolveActiveLocation(user, locationOptions);
+  const scopedModules = activeLocationId
+    ? accessibleLocationModules.filter((location) => location.id === activeLocationId)
+    : accessibleLocationModules;
+  const moduleSummary = summarizeLocationModules(scopedModules);
   const items = navigation.filter(
     (item) => canAccessPage(user, item.page) && matchesModuleVisibility(item, moduleSummary)
   );
   const showReservationTools = canAccessPage(user, "reservations") && moduleSummary.has("reservations");
   const reservationSummary = showReservationTools
-    ? await getAdminReservationLiveSummary(user)
+    ? await getAdminReservationLiveSummary(user, { locationId: activeLocationId })
     : null;
-  const notificationSummary = await getAdminNotificationSummary(user);
+  const notificationSummary = await getAdminNotificationSummary(user, {
+    locationId: activeLocationId
+  });
 
   return (
     <AdminChrome
+      activeLocationId={activeLocationId}
+      activeLocationLabel={activeLocation?.publicName || activeLocation?.name || ""}
       handheldMode={Boolean(user.rolePermission?.useHandheldMode)}
       initialNotificationSummary={notificationSummary}
       initialReservationSummary={reservationSummary}
       items={items}
+      locationOptions={locationOptions}
       watchReservationSummary={showReservationTools}
       showPermissions={user.role === "ADMIN"}
       userName={user.name}

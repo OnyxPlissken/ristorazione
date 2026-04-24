@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { AdminDialog } from "../../../components/admin-dialog";
 import AdminFloorLayoutEditor from "../../../components/admin-floor-layout-editor";
+import { resolveActiveLocation } from "../../../lib/active-location";
 import {
   deleteTableAction,
   generateTablesAction,
@@ -102,12 +103,8 @@ function sortZones(zones) {
   );
 }
 
-function getLocationHref(locationId, view = "tables") {
-  return `/admin/tavoli?locationId=${locationId}&view=${view}`;
-}
-
-function getViewHref(locationId, view) {
-  return `/admin/tavoli?locationId=${locationId}&view=${view}`;
+function getViewHref(view) {
+  return `/admin/tavoli?view=${view}`;
 }
 
 function CombinableTableSelector({ currentTableId = "", tables, selectedIds = [] }) {
@@ -297,14 +294,10 @@ export default async function TavoliPage({ searchParams }) {
   requirePageAccess(user, "tables");
 
   const params = await searchParams;
-  const requestedLocationId = Array.isArray(params?.locationId)
-    ? params.locationId[0]
-    : params?.locationId;
   const requestedView = String(params?.view || "tables");
   const activeView = tableViews.find((view) => view.key === requestedView)?.key || "tables";
   const locations = sortLocations(await getAccessibleLocations(user));
-  const selectedLocation =
-    locations.find((location) => location.id === requestedLocationId) || null;
+  const { activeLocation: selectedLocation } = await resolveActiveLocation(user, locations);
 
   if (!locations.length) {
     return (
@@ -322,29 +315,10 @@ export default async function TavoliPage({ searchParams }) {
   if (!selectedLocation) {
     return (
       <div className="page-stack">
-        <section className="panel-card location-selector-stage">
+        <section className="panel-card">
           <div className="panel-header">
-            <div>
-              <h2>Scegli la sede da gestire</h2>
-              <p>
-                {requestedLocationId
-                  ? "La sede selezionata non e piu disponibile per questo profilo. Scegli un altro locale."
-                  : "Prima di modificare zone, tavoli o combinazioni scegli la sede corretta."}
-              </p>
-            </div>
-            <div className="row-meta">
-              <span>{locations.length} sedi accessibili</span>
-            </div>
-          </div>
-
-          <div className="location-picker-grid">
-            {locations.map((location) => (
-              <Link className="location-pill" href={getLocationHref(location.id)} key={location.id}>
-                <strong>{location.name}</strong>
-                <span>{location.city}</span>
-                <small>{location.address}</small>
-              </Link>
-            ))}
+            <h2>Tavoli</h2>
+            <p>Nessuna sede attiva disponibile. Selezionala dal login o dalla topbar.</p>
           </div>
         </section>
       </div>
@@ -368,39 +342,16 @@ export default async function TavoliPage({ searchParams }) {
         <div className="panel-header">
           <div>
             <h2>Gestione tavoli</h2>
-            <p>Una sede alla volta, con viste distinte per zone, tavoli, combinazioni e planimetria.</p>
+            <p>La sede attiva resta fuori dalla pagina: qui lavori solo su zone, tavoli, combinazioni e planimetria.</p>
           </div>
           <div className="row-meta">
             <span>{selectedLocation.tables.length} tavoli in sede</span>
-            <span>{locations.length} sedi accessibili</span>
+            <span>{selectedLocation.name}</span>
           </div>
         </div>
 
         <div className="page-actions">
-          <AdminDialog
-            buttonClassName="button button-muted"
-            buttonLabel="Cambia sede"
-            description="Scegli il locale da gestire prima di intervenire sulla sala."
-            title="Seleziona una sede"
-          >
-            <div className="location-picker-grid">
-              {locations.map((location) => (
-                <Link
-                  className={
-                    location.id === selectedLocation.id ? "location-pill active" : "location-pill"
-                  }
-                  href={getLocationHref(location.id, activeView)}
-                  key={location.id}
-                >
-                  <strong>{location.name}</strong>
-                  <span>{location.city}</span>
-                  <small>{location.address}</small>
-                </Link>
-              ))}
-            </div>
-          </AdminDialog>
-
-          <Link className="button button-muted" href={`/admin/sala?locationId=${selectedLocation.id}`}>
+          <Link className="button button-muted" href="/admin/sala">
             Apri mappa sala
           </Link>
 
@@ -462,7 +413,7 @@ export default async function TavoliPage({ searchParams }) {
               className={
                 activeView === view.key ? "admin-section-tab active" : "admin-section-tab"
               }
-              href={getViewHref(selectedLocation.id, view.key)}
+              href={getViewHref(view.key)}
               key={view.key}
             >
               <strong>{view.label}</strong>

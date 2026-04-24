@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getAccessibleLocationOptions, resolveActiveLocation } from "../../../lib/active-location";
 import { requireUser } from "../../../lib/auth";
 import { summarizeLocationModules } from "../../../lib/location-modules";
 import { canAccessPage, requirePageAccess } from "../../../lib/permissions";
@@ -14,7 +15,16 @@ export default async function PrenotazioniPage({ searchParams }) {
   const user = await requireUser();
   requirePageAccess(user, "reservations");
   const canManageReservations = canAccessPage(user, "reservations", "manage");
-  const moduleSummary = summarizeLocationModules(await getAccessibleLocationModules(user));
+  const [locationOptions, accessibleLocationModules] = await Promise.all([
+    getAccessibleLocationOptions(user),
+    getAccessibleLocationModules(user)
+  ]);
+  const { activeLocationId } = await resolveActiveLocation(user, locationOptions);
+  const moduleSummary = summarizeLocationModules(
+    activeLocationId
+      ? accessibleLocationModules.filter((location) => location.id === activeLocationId)
+      : accessibleLocationModules
+  );
 
   if (!moduleSummary.has("reservations")) {
     return (
@@ -37,7 +47,7 @@ export default async function PrenotazioniPage({ searchParams }) {
     );
   }
 
-  const reservations = await getReservationsPageData(user);
+  const reservations = await getReservationsPageData(user, { locationId: activeLocationId });
   const params = await searchParams;
   const reservationId = String(params?.reservationId || "");
 

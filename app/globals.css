@@ -4866,10 +4866,10 @@ textarea:focus {
 }
 
 .admin-shell {
-  grid-template-columns: 252px minmax(0, 1fr);
-  gap: 20px;
+  grid-template-columns: 236px minmax(0, 1fr);
+  gap: 16px;
   width: min(1800px, calc(100% - 24px));
-  padding: 16px 0 24px;
+  padding: 14px 0 24px;
 }
 
 .admin-sidebar-wrap {
@@ -4878,16 +4878,16 @@ textarea:focus {
 
 .admin-sidebar {
   min-height: calc(100vh - 32px);
-  padding: 18px 14px;
-  gap: 18px;
-  border-radius: 20px;
+  padding: 14px 12px;
+  gap: 16px;
+  border-radius: 18px;
   background: linear-gradient(180deg, #0f172a 0%, #111c31 52%, #0b1322 100%);
   border: 1px solid rgba(148, 163, 184, 0.16);
-  box-shadow: 0 28px 56px rgba(2, 6, 23, 0.26);
+  box-shadow: 0 18px 36px rgba(2, 6, 23, 0.22);
 }
 
 .admin-sidebar-header {
-  padding: 2px 6px 12px;
+  padding: 4px 8px 12px;
   border-bottom: 1px solid rgba(148, 163, 184, 0.14);
 }
 
@@ -4895,13 +4895,33 @@ textarea:focus {
   color: #ffffff;
 }
 
+.admin-sidebar-context {
+  display: grid;
+  gap: 3px;
+  margin-top: 10px;
+}
+
+.admin-sidebar-context span {
+  color: rgba(226, 232, 240, 0.46);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.admin-sidebar-context strong {
+  color: #f8fafc;
+  font-size: 0.9rem;
+  font-weight: 650;
+}
+
 .sidebar-nav {
-  gap: 14px;
+  gap: 12px;
 }
 
 .sidebar-nav-group {
-  gap: 8px;
-  padding-top: 14px;
+  gap: 6px;
+  padding-top: 12px;
   border-top: 1px solid rgba(148, 163, 184, 0.14);
 }
 
@@ -4913,13 +4933,13 @@ textarea:focus {
 }
 
 .sidebar-nav-group-items {
-  gap: 6px;
+  gap: 4px;
 }
 
 .sidebar-link {
-  min-height: 42px;
-  padding: 10px 12px;
-  border-radius: 12px;
+  min-height: 38px;
+  padding: 8px 10px;
+  border-radius: 10px;
   border: 1px solid transparent;
   background: transparent;
   color: rgba(226, 232, 240, 0.82);
@@ -4969,11 +4989,17 @@ textarea:focus {
 
 .admin-topbar {
   z-index: 24;
-  padding: 14px 18px;
-  border-radius: 18px;
-  background: rgba(255, 255, 255, 0.92);
+  padding: 12px 16px;
+  border-radius: 16px;
+  background: #ffffff;
   border: 1px solid #dbe3ef;
-  box-shadow: 0 12px 34px rgba(15, 23, 42, 0.08);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.06);
+}
+
+.admin-toolbar-actions {
+  justify-content: flex-end;
+  flex-wrap: wrap;
+  row-gap: 8px;
 }
 
 .admin-topbar .eyebrow {
@@ -4982,16 +5008,43 @@ textarea:focus {
 
 .admin-topbar h1 {
   font-family: var(--sans);
-  font-size: 1rem;
-  font-weight: 750;
+  font-size: 0.98rem;
+  font-weight: 700;
   letter-spacing: -0.03em;
   text-transform: none;
 }
 
 .admin-topbar-copy p {
   margin: 0;
-  font-size: 0.84rem;
+  font-size: 0.82rem;
   color: var(--muted);
+}
+
+.admin-location-switcher {
+  min-width: 240px;
+}
+
+.admin-location-switcher label {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-location-switcher label span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.admin-location-switcher select {
+  min-width: 240px;
+  min-height: 38px;
+  padding: 0 12px;
+  border-radius: 10px;
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+  color: var(--text);
 }
 
 .admin-global-search {
@@ -5430,6 +5483,12 @@ textarea:focus {
     min-width: 0;
   }
 
+  .admin-location-switcher,
+  .admin-location-switcher select {
+    min-width: 0;
+    width: 100%;
+  }
+
   .admin-sidebar-wrap {
     width: min(320px, calc(100vw - 16px));
     padding: 8px;
@@ -5483,6 +5542,10 @@ textarea:focus {
 
   .admin-topbar-copy p {
     display: none;
+  }
+
+  .admin-location-switcher {
+    width: 100%;
   }
 
   .button {
@@ -5543,6 +5606,28 @@ textarea:focus {
 .reservation-controls-stack {
   display: grid;
   gap: 14px;
+}
+
+.reservation-filter-static {
+  display: grid;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 12px;
+  border: 1px solid #dbe3ef;
+  background: #ffffff;
+}
+
+.reservation-filter-static span {
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.reservation-filter-static strong {
+  font-size: 0.94rem;
+  line-height: 1.3;
 }
 
 .reservation-toolbar-compact {

@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getAccessibleLocationOptions, resolveActiveLocation } from "../../../lib/active-location";
 import { requireUser } from "../../../lib/auth";
 import { summarizeLocationModules } from "../../../lib/location-modules";
 import { getDateKey } from "../../../lib/reservations";
@@ -15,7 +16,16 @@ export const dynamic = "force-dynamic";
 export default async function CalendarioPage({ searchParams }) {
   const user = await requireUser();
   requirePageAccess(user, "reservations");
-  const moduleSummary = summarizeLocationModules(await getAccessibleLocationModules(user));
+  const [locationOptions, accessibleLocationModules] = await Promise.all([
+    getAccessibleLocationOptions(user),
+    getAccessibleLocationModules(user)
+  ]);
+  const { activeLocation, activeLocationId } = await resolveActiveLocation(user, locationOptions);
+  const moduleSummary = summarizeLocationModules(
+    activeLocationId
+      ? accessibleLocationModules.filter((location) => location.id === activeLocationId)
+      : accessibleLocationModules
+  );
 
   if (!moduleSummary.has("reservations")) {
     return (
@@ -39,10 +49,9 @@ export default async function CalendarioPage({ searchParams }) {
   }
 
   const params = await searchParams;
-  const locationId = String(params?.locationId || "");
   const dateText = String(params?.date || getDateKey(new Date()));
   const data = await getReservationCalendarPageData(user, {
-    locationId,
+    locationId: activeLocationId,
     dateText
   });
 
@@ -52,27 +61,16 @@ export default async function CalendarioPage({ searchParams }) {
         <div className="panel-header">
           <div>
             <h2>Calendario prenotazioni</h2>
-            <p>Vista per data con timeline ordinata, sedi e tavoli assegnati.</p>
+            <p>Vista per data con timeline ordinata sulla sede attiva.</p>
           </div>
           <div className="row-meta">
             <span>{dateText}</span>
-            <span>{data.groups.reduce((sum, group) => sum + group.reservations.length, 0)} prenotazioni</span>
+            <span>{activeLocation?.publicName || "Nessuna sede"}</span>
           </div>
         </div>
 
         <form className="reservation-toolbar">
-          <div className="form-grid">
-            <label>
-              <span>Sede</span>
-              <select defaultValue={locationId} name="locationId">
-                <option value="">Tutte le sedi</option>
-                {data.locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name} - {location.city}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className="form-grid reservation-date-toolbar">
             <label>
               <span>Data</span>
               <input defaultValue={dateText} name="date" type="date" />

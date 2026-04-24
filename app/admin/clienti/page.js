@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getAccessibleLocationOptions, resolveActiveLocation } from "../../../lib/active-location";
 import AdminCustomerCrmPanel from "../../../components/admin-customer-crm-panel";
 import { requireUser } from "../../../lib/auth";
 import { summarizeLocationModules } from "../../../lib/location-modules";
@@ -13,7 +14,16 @@ export const dynamic = "force-dynamic";
 export default async function ClientiCrmPage({ searchParams }) {
   const user = await requireUser();
   requirePageAccess(user, "reservations");
-  const moduleSummary = summarizeLocationModules(await getAccessibleLocationModules(user));
+  const [locationOptions, accessibleLocationModules] = await Promise.all([
+    getAccessibleLocationOptions(user),
+    getAccessibleLocationModules(user)
+  ]);
+  const { activeLocationId } = await resolveActiveLocation(user, locationOptions);
+  const moduleSummary = summarizeLocationModules(
+    activeLocationId
+      ? accessibleLocationModules.filter((location) => location.id === activeLocationId)
+      : accessibleLocationModules
+  );
 
   if (!moduleSummary.has("customerScoring")) {
     return (
@@ -36,7 +46,7 @@ export default async function ClientiCrmPage({ searchParams }) {
     );
   }
 
-  const data = await getCustomerCrmPageData(user);
+  const data = await getCustomerCrmPageData(user, { locationId: activeLocationId });
   const params = await searchParams;
   const customerId = String(params?.customerId || "");
 

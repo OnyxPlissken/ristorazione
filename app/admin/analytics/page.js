@@ -1,4 +1,5 @@
 import { requireUser } from "../../../lib/auth";
+import { getAccessibleLocationOptions, resolveActiveLocation } from "../../../lib/active-location";
 import {
   CUSTOMER_SCORE_BAND_LABELS,
   CUSTOMER_SCORE_BAND_SUMMARY_LABELS,
@@ -30,7 +31,9 @@ function formatCurrency(value) {
 export default async function AnalyticsPage() {
   const user = await requireUser();
   requirePageAccess(user, "dashboard");
-  const data = await getAnalyticsPageData(user);
+  const locationOptions = await getAccessibleLocationOptions(user);
+  const { activeLocation, activeLocationId } = await resolveActiveLocation(user, locationOptions);
+  const data = await getAnalyticsPageData(user, { locationId: activeLocationId });
 
   return (
     <div className="page-stack analytics-page">
@@ -38,11 +41,11 @@ export default async function AnalyticsPage() {
         <div className="panel-header">
           <div>
             <h2>Analytics operativa</h2>
-            <p>Misura il valore creato da scoring, waitlist, slot engine, POS e reminder.</p>
+            <p>Misura il valore creato da scoring, waitlist, slot engine, POS e reminder sulla sede attiva.</p>
           </div>
           <div className="row-meta">
             <span>Ultimi 90 giorni</span>
-            <span>{data.locations.length} sedi</span>
+            <span>{activeLocation?.publicName || "Nessuna sede"}</span>
           </div>
         </div>
 

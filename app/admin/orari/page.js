@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { resolveActiveLocation } from "../../../lib/active-location";
 import { requireUser } from "../../../lib/auth";
 import {
   deleteOpeningExceptionAction,
@@ -25,17 +26,12 @@ function exceptionStatusLabel(exception) {
   return "Orario speciale";
 }
 
-export default async function OrariPage({ searchParams }) {
+export default async function OrariPage() {
   const user = await requireUser();
   requirePageAccess(user, "hours");
   const canManageHours = canAccessPage(user, "hours", "manage");
   const locations = await getAccessibleLocations(user);
-  const resolvedSearchParams = await searchParams;
-  const requestedLocationId = String(resolvedSearchParams?.locationId || "");
-  const hasMultipleLocations = locations.length > 1;
-  const selectedLocation = hasMultipleLocations
-    ? locations.find((location) => location.id === requestedLocationId) || null
-    : locations[0] || null;
+  const { activeLocation: selectedLocation } = await resolveActiveLocation(user, locations);
 
   return (
     <div className="page-stack">
@@ -48,45 +44,13 @@ export default async function OrariPage({ searchParams }) {
         </section>
       ) : null}
 
-      {hasMultipleLocations ? (
-        <section className="panel-card">
-          <div className="panel-header">
-            <div>
-              <h2>Seleziona la sede</h2>
-              <p>Scegli prima il locale, poi entri in orari settimanali, eccezioni e slot.</p>
-            </div>
-            <span className="location-chip highlighted">
-              {selectedLocation ? selectedLocation.name : "Nessuna sede selezionata"}
-            </span>
-          </div>
-
-          <div className="location-picker-grid">
-            {locations.map((location) => (
-              <Link
-                className={
-                  selectedLocation?.id === location.id
-                    ? "location-pill active"
-                    : "location-pill"
-                }
-                href={`/admin/orari?locationId=${location.id}`}
-                key={location.id}
-              >
-                <strong>{location.name}</strong>
-                <span>{location.city}</span>
-                <small>{location.address}</small>
-              </Link>
-            ))}
-          </div>
-        </section>
-      ) : null}
-
       {selectedLocation ? (
         <>
           <section className="panel-card" key={selectedLocation.id}>
             <div className="panel-header">
               <div>
                 <h2>{selectedLocation.name}</h2>
-                <p>Orari di apertura, durata tavolo, slot cliente e regole prenotazione.</p>
+                <p>Orari di apertura, durata tavolo, slot cliente e regole prenotazione della sede attiva.</p>
               </div>
               <div className="row-meta">
                 <span>{selectedLocation.city}</span>
@@ -376,7 +340,7 @@ export default async function OrariPage({ searchParams }) {
         <section className="panel-card">
           <p className="empty-copy">
             {locations.length
-              ? "Seleziona una sede per configurare orari, eccezioni e slot."
+              ? "Nessuna sede attiva disponibile. Seleziona una sede dal login o dalla topbar."
               : "Nessuna sede accessibile disponibile."}
           </p>
         </section>

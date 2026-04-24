@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { getAccessibleLocationOptions, resolveActiveLocation } from "../../lib/active-location";
 import { requireUser } from "../../lib/auth";
 import { CUSTOMER_SCORE_BAND_SUMMARY_LABELS } from "../../lib/constants";
 import { formatDateTime } from "../../lib/format";
@@ -28,7 +29,9 @@ function HandheldModuleCard({ href, label, meta }) {
 export default async function AdminHomePage() {
   const user = await requireUser();
   requirePageAccess(user, "dashboard");
-  const data = await getAdminDashboardData(user);
+  const locationOptions = await getAccessibleLocationOptions(user);
+  const { activeLocation, activeLocationId } = await resolveActiveLocation(user, locationOptions);
+  const data = await getAdminDashboardData(user, { locationId: activeLocationId });
   const handheldModules = [
     canAccessPage(user, "reservations")
       ? {
@@ -70,7 +73,7 @@ export default async function AdminHomePage() {
               <p>Accesso rapido alle funzioni operative del turno.</p>
             </div>
             <div className="row-meta">
-              <span>{data.stats.locations} sedi</span>
+              <span>{activeLocation?.publicName || "Nessuna sede"}</span>
               <span>{data.upcomingReservations.length} arrivi imminenti</span>
             </div>
           </div>
@@ -124,7 +127,7 @@ export default async function AdminHomePage() {
   return (
     <div className="page-stack">
       <section className="stats-grid">
-        <StatCard label="Sedi accessibili" value={data.stats.locations} />
+        <StatCard label="Sedi disponibili" value={locationOptions.length} />
         <StatCard label="Tavoli configurati" value={data.stats.tables} />
         <StatCard label="Menu attivi" value={data.stats.menus} />
         <StatCard label="Prenotazioni registrate" value={data.stats.reservations} />
@@ -140,7 +143,7 @@ export default async function AdminHomePage() {
       <section className="panel-card">
         <div className="panel-header">
           <h2>Prenotazioni imminenti</h2>
-          <p>Vista rapida del servizio in arrivo.</p>
+          <p>Vista rapida del servizio in arrivo per la sede attiva.</p>
         </div>
         <div className="data-list">
           {data.upcomingReservations.map((reservation) => (

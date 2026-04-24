@@ -1,4 +1,5 @@
 import AdminFloorServiceBoard from "../../../components/admin-floor-service-board";
+import { getAccessibleLocationOptions, resolveActiveLocation } from "../../../lib/active-location";
 import { requireUser } from "../../../lib/auth";
 import { getDateKey } from "../../../lib/reservations";
 import { canAccessPage, requirePageAccess } from "../../../lib/permissions";
@@ -11,11 +12,12 @@ export default async function SalaPage({ searchParams }) {
   requirePageAccess(user, "tables");
   const canManageTables = canAccessPage(user, "tables", "manage");
   const canManageReservations = canAccessPage(user, "reservations", "manage");
+  const locationOptions = await getAccessibleLocationOptions(user);
+  const { activeLocation, activeLocationId } = await resolveActiveLocation(user, locationOptions);
   const params = await searchParams;
-  const locationId = String(params?.locationId || "");
   const dateText = String(params?.date || getDateKey(new Date()));
   const data = await getFloorPageData(user, {
-    locationId,
+    locationId: activeLocationId,
     dateText
   });
 
@@ -25,26 +27,16 @@ export default async function SalaPage({ searchParams }) {
         <div className="panel-header">
           <div>
             <h2>Sala operativa</h2>
-            <p>Seleziona sede e data, poi lavora sulla planimetria live del servizio.</p>
+            <p>La sede attiva viene scelta al login e poi riusata nella planimetria live del servizio.</p>
           </div>
           <div className="row-meta">
-            <span>{data.selectedLocation ? data.selectedLocation.name : "Nessuna sede"}</span>
+            <span>{activeLocation?.publicName || data.selectedLocation?.name || "Nessuna sede"}</span>
             <span>{dateText}</span>
           </div>
         </div>
 
         <form className="reservation-toolbar">
-          <div className="form-grid">
-            <label>
-              <span>Sede</span>
-              <select defaultValue={data.selectedLocation?.id || ""} name="locationId">
-                {data.locations.map((location) => (
-                  <option key={location.id} value={location.id}>
-                    {location.name} - {location.city}
-                  </option>
-                ))}
-              </select>
-            </label>
+          <div className="form-grid reservation-date-toolbar">
             <label>
               <span>Data</span>
               <input defaultValue={dateText} name="date" type="date" />

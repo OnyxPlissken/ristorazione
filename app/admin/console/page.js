@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { resolveActiveLocation } from "../../../lib/active-location";
 import { requireUser } from "../../../lib/auth";
 import { saveAdminConsoleLocationAction } from "../../../lib/actions/admin-actions";
 import {
@@ -129,9 +130,8 @@ function featureSummary(technical, location) {
     .map((definition) => definition.title);
 }
 
-function hrefFor(locationId, section, panel) {
+function hrefFor(section, panel) {
   const params = new URLSearchParams();
-  params.set("locationId", locationId);
   params.set("section", section);
 
   if (panel) {
@@ -187,10 +187,8 @@ export default async function ConsoleAdminPage({ searchParams }) {
   const canManageConsole = canAccessPage(user, "console", "manage");
   const locations = await getAdminConsoleLocations();
   const params = await searchParams;
-  const locationId = String(params?.locationId || "");
   const requestedSection = String(params?.section || "generale");
-  const selectedLocation =
-    locations.find((location) => location.id === locationId) || locations[0] || null;
+  const { activeLocation: selectedLocation } = await resolveActiveLocation(user, locations);
   const selectedSection =
     consoleSections.find((section) => section.key === requestedSection)?.key || "generale";
   const availablePanels = consolePanels[selectedSection] || [];
@@ -239,30 +237,12 @@ export default async function ConsoleAdminPage({ searchParams }) {
         <div className="panel-header">
           <div>
             <h2>Console Admin</h2>
-            <p>Una sede alla volta, moduli chiari e configurazione tecnica suddivisa per contesto.</p>
+            <p>La sede attiva viene scelta una volta sola e qui entri direttamente nella configurazione tecnica.</p>
           </div>
           <div className="row-meta">
             <span>{locations.length} sedi configurabili</span>
             <span>{selectedLocation.name}</span>
           </div>
-        </div>
-
-        <div className="location-picker-grid">
-          {locations.map((location) => {
-            const isActive = location.id === selectedLocation.id;
-
-            return (
-              <Link
-                className={isActive ? "location-pill active" : "location-pill"}
-                href={hrefFor(location.id, selectedSection, selectedPanel)}
-                key={location.id}
-              >
-                <strong>{location.name}</strong>
-                <span>{location.city}</span>
-                <small>{location.technicalSettings?.displayName || location.name}</small>
-              </Link>
-            );
-          })}
         </div>
 
         <div className="console-overview-strip">
@@ -329,11 +309,7 @@ export default async function ConsoleAdminPage({ searchParams }) {
                     ? "admin-section-tab active"
                     : "admin-section-tab"
                 }
-                href={hrefFor(
-                  selectedLocation.id,
-                  section.key,
-                  consolePanels[section.key]?.[0]?.key || ""
-                )}
+                href={hrefFor(section.key, consolePanels[section.key]?.[0]?.key || "")}
                 key={section.key}
               >
                 <strong>{section.label}</strong>
@@ -350,7 +326,7 @@ export default async function ConsoleAdminPage({ searchParams }) {
                     ? "console-subnav-pill active"
                     : "console-subnav-pill"
                 }
-                href={hrefFor(selectedLocation.id, selectedSection, panel.key)}
+                href={hrefFor(selectedSection, panel.key)}
                 key={panel.key}
               >
                 <strong>{panel.label}</strong>

@@ -408,6 +408,8 @@ export default function AdminReservationsPanel({
       reservations.map((reservation) => [reservation.locationId, reservation.locationName])
     ).entries()
   ].map(([value, label]) => ({ value, label }));
+  const hasMultipleLocations = locationOptions.length > 1;
+  const activeLocationLabel = locationOptions[0]?.label || "";
 
   const filteredReservations = reservations.filter((reservation) => {
     const matchesStatus =
@@ -571,11 +573,11 @@ export default function AdminReservationsPanel({
       body: JSON.stringify({
         pageKey: "reservations",
         name,
-        locationId: locationFilter === "ALL" ? null : locationFilter,
+        locationId: !hasMultipleLocations || locationFilter === "ALL" ? null : locationFilter,
         filters: {
           query,
           statusFilter,
-          locationFilter
+          locationFilter: hasMultipleLocations ? locationFilter : "ALL"
         }
       })
     });
@@ -649,20 +651,27 @@ export default function AdminReservationsPanel({
           </label>
 
           <div className="reservation-filter-cluster">
-            <label>
-              <span>Sede</span>
-              <select
-                onChange={(event) => setLocationFilter(event.target.value)}
-                value={locationFilter}
-              >
-                <option value="ALL">Tutte le sedi</option>
-                {locationOptions.map((location) => (
-                  <option key={location.value} value={location.value}>
-                    {location.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            {hasMultipleLocations ? (
+              <label>
+                <span>Sede</span>
+                <select
+                  onChange={(event) => setLocationFilter(event.target.value)}
+                  value={locationFilter}
+                >
+                  <option value="ALL">Tutte le sedi</option>
+                  {locationOptions.map((location) => (
+                    <option key={location.value} value={location.value}>
+                      {location.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : (
+              <div className="reservation-filter-static">
+                <span>Sede attiva</span>
+                <strong>{activeLocationLabel || "Nessuna sede"}</strong>
+              </div>
+            )}
 
             <label>
               <span>Filtro salvato</span>

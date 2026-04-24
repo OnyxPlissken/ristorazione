@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
-import { logoutAction } from "../lib/actions/auth-actions";
+import {
+  logoutAction,
+  switchActiveLocationAction
+} from "../lib/actions/auth-actions";
 import AdminSidebarNav from "./admin-sidebar-nav";
 import AdminGlobalSearch from "./admin-global-search";
 
@@ -57,16 +61,21 @@ function formatNotificationTime(value) {
 }
 
 export default function AdminChrome({
+  activeLocationId = "",
+  activeLocationLabel = "",
   children,
   handheldMode = false,
   initialNotificationSummary,
   initialReservationSummary,
   items,
+  locationOptions = [],
   watchReservationSummary = false,
   showPermissions,
   userName,
   userRoleLabel
 }) {
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
   const [sidebarHidden, setSidebarHidden] = useState(false);
   const [isCompactViewport, setIsCompactViewport] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
@@ -82,6 +91,9 @@ export default function AdminChrome({
     new Set((initialNotificationSummary?.recentNotifications || []).map((item) => item.id))
   );
   const canWatchReservations = watchReservationSummary;
+  const nextPath = searchParams?.toString()
+    ? `${pathname}?${searchParams.toString()}`
+    : pathname || "/admin";
 
   useEffect(() => {
     const mediaQuery = window.matchMedia("(max-width: 1180px)");
@@ -387,6 +399,12 @@ export default function AdminChrome({
               <Link className="brand" href="/admin">
                 Coperto
               </Link>
+              {activeLocationLabel ? (
+                <div className="admin-sidebar-context">
+                  <span>Sede attiva</span>
+                  <strong>{activeLocationLabel}</strong>
+                </div>
+              ) : null}
             </div>
           </div>
 
@@ -425,12 +443,33 @@ export default function AdminChrome({
             </button>
 
             <div className="admin-topbar-copy">
-              <h1>Pannello amministrativo</h1>
-              <p>Operativita, configurazione e controllo.</p>
+              <h1>Backoffice</h1>
+              <p>Operativita, configurazione e controllo per la sede attiva.</p>
             </div>
           </div>
 
           <div className="admin-toolbar-actions">
+            {locationOptions.length > 0 ? (
+              <form action={switchActiveLocationAction} className="admin-location-switcher">
+                <input name="nextPath" type="hidden" value={nextPath} />
+                <label>
+                  <span>Sede attiva</span>
+                  <select
+                    defaultValue={activeLocationId}
+                    name="locationId"
+                    onChange={(event) => event.currentTarget.form?.requestSubmit()}
+                  >
+                    {locationOptions.map((location) => (
+                      <option key={location.id} value={location.id}>
+                        {location.publicName}
+                        {location.city ? ` / ${location.city}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </form>
+            ) : null}
+
             <AdminGlobalSearch />
 
             <div className="notification-toast-stack" aria-live="polite">
