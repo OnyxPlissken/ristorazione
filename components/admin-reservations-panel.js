@@ -5,8 +5,11 @@ import {
   useActionState,
   useDeferredValue,
   useEffect,
-  useState
+  useMemo,
+  useState,
+  useTransition
 } from "react";
+import { useRouter } from "next/navigation";
 import { updateReservationAction } from "../lib/actions/admin-actions";
 import {
   CUSTOMER_SCORE_BAND_LABELS,
@@ -44,7 +47,7 @@ function matchesSearch(reservation, normalizedQuery) {
 }
 
 function isVisibleInAllView(reservation, now) {
-  if (reservation.status === "CANCELLATA") {
+  if (reservation.status === "CANCELLATA" || reservation.archivedAt) {
     return false;
   }
 
@@ -69,7 +72,20 @@ function statusTone(status) {
   return "failed";
 }
 
-function ReservationListItem({ active, onSelect, reservation }) {
+function applySavedFilterConfig(savedFilter, setters) {
+  const filters = savedFilter?.filters || {};
+  setters.setQuery(String(filters.query || ""));
+  setters.setStatusFilter(String(filters.statusFilter || "ALL"));
+  setters.setLocationFilter(String(filters.locationFilter || "ALL"));
+}
+
+function ReservationListItem({
+  active,
+  checked,
+  onSelect,
+  onToggle,
+  reservation
+}) {
   const assignedTableLabel = reservation.assignedTableCodes?.length
     ? reservation.assignedTableCodes.join(" + ")
     : "Auto";
@@ -82,6 +98,14 @@ function ReservationListItem({ active, onSelect, reservation }) {
       onClick={onSelect}
       type="button"
     >
+      <span className="reservation-row-cell reservation-checkbox-cell">
+        <input
+          checked={checked}
+          onChange={(event) => onToggle(event.target.checked)}
+          onClick={(event) => event.stopPropagation()}
+          type="checkbox"
+        />
+      </span>
       <span className="reservation-row-cell reservation-row-primary">
         <strong>{reservation.guestName}</strong>
         <small>
@@ -122,7 +146,7 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
     return (
       <section className="section-card reservation-detail-empty">
         <strong>Nessuna prenotazione selezionata</strong>
-        <p>Scegli una prenotazione dalla lista per vedere il dettaglio.</p>
+        <p>Scegli una prenotazione dalla lista per vedere dettaglio, pagamento e azioni.</p>
       </section>
     );
   }
@@ -186,7 +210,7 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
               <strong>{customerProfile?.priorityScore ?? reservation.customerPriorityScore ?? 0}</strong>
             </div>
             <div className="reservation-detail-cell">
-              <span>Deposito consigliato</span>
+              <span>Deposito</span>
               <strong>
                 {reservation.depositRequired
                   ? reservation.depositAmount
@@ -263,24 +287,13 @@ function ReservationDetailPanel({ canManageReservations, reservation }) {
             </div>
           ) : null}
 
-          <div className="reservation-info-grid">
-            <div>
-              <strong>Creata il</strong>
-              <span>{formatDateTime(reservation.createdAt)}</span>
-            </div>
-            <div>
-              <strong>Riepilogo assegnazione</strong>
-              <span>{assignedTableLabel}</span>
-            </div>
-          </div>
-
           {state.error ? <p className="form-error">{state.error}</p> : null}
           {state.success ? <p className="form-success">{state.success}</p> : null}
 
           <div className="entity-footer">
             <span>
               {canManageReservations
-                ? "Le modifiche vengono applicate subito al record selezionato."
+                ? "Le modifiche aggiornano stato, assegnazione, reminder e deposito."
                 : "Il tuo profilo puo consultare ma non modificare la prenotazione."}
             </span>
             <button className="button button-primary" type="submit">
@@ -298,11 +311,18 @@ export default function AdminReservationsPanel({
   reservations,
   canManageReservations
 }) {
+  const router = useRouter();
   const [query, setQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState("ALL");
+  const [locationFilter, setLocationFilter] = useState("ALL");
   const [selectedReservationId, setSelectedReservationId] = useState(
     initialSelectedReservationId || reservations[0]?.id || ""
   );
+  const [selectedReservationIds, setSelectedReservationIds] = useState([]);
+  const [savedFilters, setSavedFilters] = useState([]);
+  const [savedFilterId, setSavedFilterId] = useState("");
+  const [bulkMessage, setBulkMessage] = useState("");
+  const [isPending, startBulkTransition] = useTransition();
   const deferredQuery = useDeferredValue(query);
   const normalizedQuery = deferredQuery.trim().toLowerCase();
   const now = new Date();
@@ -317,14 +337,59 @@ export default function AdminReservationsPanel({
     { ALL: allViewReservations.length }
   );
 
+  const locationOptions = useMemo(
+    () =>
+      [...new Map(reservations.map((reservation) => [reservation.locationId, reservation.locationName])).entries()].map(
+        ([value, label]) => ({ value, label })
+      ),
+    [reservations]
+  );
+
   const filteredReservations = reservations.filter((reservation) => {
     const matchesStatus =
       statusFilter === "ALL"
         ? isVisibleInAllView(reservation, now)
         : reservation.status === statusFilter;
+    const matchesLocation =
+      locationFilter === "ALL" ? true : reservation.locationId === locationFilter;
 
-    return matchesStatus && matchesSearch(reservation, normalizedQuery);
+    return matchesStatus && matchesLocation && matchesSearch(reservation, normalizedQuery);
   });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSavedFilters() {
+      try {
+        const response = await fetch("/api/admin/filters?pageKey=reservations", {
+          cache: "no-store"
+        });
+        const payload = await response.json();
+
+        if (!cancelled && response.ok) {
+          setSavedFilters(payload.filters || []);
+          const defaultFilter = (payload.filters || []).find((item) => item.isDefault);
+
+          if (defaultFilter) {
+            setSavedFilterId(defaultFilter.id);
+            applySavedFilterConfig(defaultFilter, {
+              setQuery,
+              setStatusFilter,
+              setLocationFilter
+            });
+          }
+        }
+      } catch {
+        // Ignore filter bootstrap failures.
+      }
+    }
+
+    void loadSavedFilters();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (initialSelectedReservationId && reservations.some((reservation) => reservation.id === initialSelectedReservationId)) {
@@ -345,13 +410,120 @@ export default function AdminReservationsPanel({
 
   const selectedReservation =
     filteredReservations.find((reservation) => reservation.id === selectedReservationId) || null;
+  const visibleIds = filteredReservations.map((reservation) => reservation.id);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedReservationIds.includes(id));
+
+  async function reloadSavedFilters() {
+    const response = await fetch("/api/admin/filters?pageKey=reservations", {
+      cache: "no-store"
+    });
+    const payload = await response.json();
+
+    if (response.ok) {
+      setSavedFilters(payload.filters || []);
+    }
+  }
+
+  function toggleReservationSelection(reservationId, checked) {
+    setSelectedReservationIds((current) =>
+      checked ? [...new Set([...current, reservationId])] : current.filter((id) => id !== reservationId)
+    );
+  }
+
+  function toggleAllVisible(checked) {
+    setSelectedReservationIds((current) => {
+      if (checked) {
+        return [...new Set([...current, ...visibleIds])];
+      }
+
+      return current.filter((id) => !visibleIds.includes(id));
+    });
+  }
+
+  function runBulkAction(action) {
+    if (!selectedReservationIds.length) {
+      return;
+    }
+
+    startBulkTransition(async () => {
+      setBulkMessage("");
+
+      try {
+        const response = await fetch("/api/admin/reservations/bulk", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({
+            action,
+            reservationIds: selectedReservationIds
+          })
+        });
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || "Bulk action fallita.");
+        }
+
+        setBulkMessage(`Azione ${action} applicata a ${payload.updated} prenotazioni.`);
+        setSelectedReservationIds([]);
+        router.refresh();
+      } catch (error) {
+        setBulkMessage(error.message || "Bulk action fallita.");
+      }
+    });
+  }
+
+  async function saveCurrentFilter() {
+    const name = window.prompt("Nome del filtro da salvare");
+
+    if (!name) {
+      return;
+    }
+
+    const response = await fetch("/api/admin/filters", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        pageKey: "reservations",
+        name,
+        locationId: locationFilter === "ALL" ? null : locationFilter,
+        filters: {
+          query,
+          statusFilter,
+          locationFilter
+        }
+      })
+    });
+    const payload = await response.json();
+
+    if (response.ok) {
+      setSavedFilterId(payload.filter.id);
+      await reloadSavedFilters();
+    }
+  }
+
+  async function deleteCurrentSavedFilter() {
+    if (!savedFilterId) {
+      return;
+    }
+
+    await fetch(`/api/admin/filters?filterId=${encodeURIComponent(savedFilterId)}`, {
+      method: "DELETE"
+    });
+    setSavedFilterId("");
+    await reloadSavedFilters();
+  }
 
   return (
     <section className="panel-card">
       <div className="panel-header">
         <div>
           <h2>Gestione prenotazioni</h2>
-          <p>Lista operativa in formato tabellare a sinistra, inspector tecnico a destra.</p>
+          <p>Lista operativa, filtri salvati per ruolo/sede e azioni bulk su selezione multipla.</p>
         </div>
         <div className="row-meta">
           <span>{filteredReservations.length} risultati</span>
@@ -375,32 +547,123 @@ export default function AdminReservationsPanel({
           />
         </label>
 
-        <div className="status-filter-grid">
-          {statusOrder.map((status) => (
-            <button
-              className={
-                statusFilter === status
-                  ? "status-filter-button active"
-                  : "status-filter-button"
-              }
-              key={status}
-              onClick={() => {
-                startTransition(() => {
-                  setStatusFilter(status);
-                });
-              }}
-              type="button"
+        <div className="menu-filter-grid">
+          <label>
+            <span className="sr-only">Sede</span>
+            <select
+              onChange={(event) => setLocationFilter(event.target.value)}
+              value={locationFilter}
             >
-              <strong>{status === "ALL" ? "Tutte" : RESERVATION_STATUS_LABELS[status]}</strong>
-              <span>{counts[status] || 0}</span>
+              <option value="ALL">Tutte le sedi</option>
+              {locationOptions.map((location) => (
+                <option key={location.value} value={location.value}>
+                  {location.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label>
+            <span className="sr-only">Filtro salvato</span>
+            <select
+              onChange={(event) => {
+                const nextId = event.target.value;
+                setSavedFilterId(nextId);
+                const savedFilter = savedFilters.find((item) => item.id === nextId);
+
+                if (savedFilter) {
+                  applySavedFilterConfig(savedFilter, {
+                    setQuery,
+                    setStatusFilter,
+                    setLocationFilter
+                  });
+                }
+              }}
+              value={savedFilterId}
+            >
+              <option value="">Filtri salvati</option>
+              {savedFilters.map((filter) => (
+                <option key={filter.id} value={filter.id}>
+                  {filter.name}
+                </option>
+              ))}
+            </select>
+          </label>
+        </div>
+
+        <div className="micro-actions">
+          <button className="button button-muted" onClick={saveCurrentFilter} type="button">
+            Salva filtro
+          </button>
+          {savedFilterId ? (
+            <button className="button button-muted" onClick={deleteCurrentSavedFilter} type="button">
+              Elimina filtro
             </button>
-          ))}
+          ) : null}
         </div>
       </div>
+
+      <div className="status-filter-grid">
+        {statusOrder.map((status) => (
+          <button
+            className={
+              statusFilter === status
+                ? "status-filter-button active"
+                : "status-filter-button"
+            }
+            key={status}
+            onClick={() => {
+              startTransition(() => {
+                setStatusFilter(status);
+              });
+            }}
+            type="button"
+          >
+            <strong>{status === "ALL" ? "Tutte" : RESERVATION_STATUS_LABELS[status]}</strong>
+            <span>{counts[status] || 0}</span>
+          </button>
+        ))}
+      </div>
+
+      {selectedReservationIds.length > 0 ? (
+        <div className="reservation-bulk-bar">
+          <strong>{selectedReservationIds.length} selezionate</strong>
+          <div className="micro-actions">
+            <button className="button button-muted" onClick={() => runBulkAction("CONFIRM")} type="button">
+              Conferma
+            </button>
+            <button className="button button-muted" onClick={() => runBulkAction("COMPLETE")} type="button">
+              Completa
+            </button>
+            <button className="button button-muted" onClick={() => runBulkAction("CANCEL")} type="button">
+              Cancella
+            </button>
+            <button className="button button-muted" onClick={() => runBulkAction("NO_SHOW")} type="button">
+              No show
+            </button>
+            <button className="button button-muted" onClick={() => runBulkAction("ARCHIVE")} type="button">
+              Archivia
+            </button>
+          </div>
+          {isPending ? <span className="helper-copy">Applico azione bulk...</span> : null}
+        </div>
+      ) : null}
+
+      {bulkMessage ? (
+        <p className={bulkMessage.includes("fallita") ? "form-error" : "form-success"}>
+          {bulkMessage}
+        </p>
+      ) : null}
 
       <div className="reservation-workspace">
         <div className="reservation-list-shell">
           <div className="reservation-list-head reservation-list-grid-head">
+            <span>
+              <input
+                checked={allVisibleSelected}
+                onChange={(event) => toggleAllVisible(event.target.checked)}
+                type="checkbox"
+              />
+            </span>
             <span>Cliente</span>
             <span>Arrivo</span>
             <span>Sede</span>
@@ -412,16 +675,19 @@ export default function AdminReservationsPanel({
             {filteredReservations.map((reservation) => (
               <ReservationListItem
                 active={reservation.id === selectedReservationId}
+                checked={selectedReservationIds.includes(reservation.id)}
                 key={reservation.id}
                 onSelect={() => setSelectedReservationId(reservation.id)}
+                onToggle={(checked) => toggleReservationSelection(reservation.id, checked)}
                 reservation={reservation}
               />
             ))}
 
             {filteredReservations.length === 0 ? (
-              <p className="empty-copy">
-                Nessuna prenotazione corrisponde ai filtri correnti.
-              </p>
+              <div className="empty-state-card">
+                <strong>Nessuna prenotazione nei filtri correnti</strong>
+                <p>Prova a cambiare stato, sede o ricerca libera. Puoi anche salvare una vista piu' utile per il tuo ruolo.</p>
+              </div>
             ) : null}
           </div>
         </div>

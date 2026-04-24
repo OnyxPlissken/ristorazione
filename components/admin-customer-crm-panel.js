@@ -1,6 +1,6 @@
 "use client";
 
-import { startTransition, useDeferredValue, useEffect, useState } from "react";
+import { startTransition, useDeferredValue, useEffect, useState, useTransition } from "react";
 import {
   CUSTOMER_SCORE_BAND_LABELS,
   CUSTOMER_SCORE_BAND_SUMMARY_LABELS,
@@ -20,7 +20,8 @@ function matchesSearch(profile, query) {
     profile.displayName,
     profile.normalizedEmail,
     profile.normalizedPhone,
-    ...(profile.locations || []).map((location) => location.name)
+    ...(profile.locations || []).map((location) => location.name),
+    ...(profile.tags || [])
   ]
     .filter(Boolean)
     .join(" ")
@@ -28,13 +29,29 @@ function matchesSearch(profile, query) {
 
   return haystack.includes(query);
 }
-function CrmListRow({ active, onSelect, profile }) {
+
+function applySavedFilterConfig(savedFilter, setters) {
+  const filters = savedFilter?.filters || {};
+  setters.setQuery(String(filters.query || ""));
+  setters.setTypeFilter(String(filters.typeFilter || "ALL"));
+  setters.setBandFilter(String(filters.bandFilter || "ALL"));
+}
+
+function CrmListRow({ active, checked, onSelect, onToggle, profile }) {
   return (
     <button
       className={active ? "crm-list-row active" : "crm-list-row"}
       onClick={onSelect}
       type="button"
     >
+      <div className="crm-cell crm-checkbox-cell">
+        <input
+          checked={checked}
+          onChange={(event) => onToggle(event.target.checked)}
+          onClick={(event) => event.stopPropagation()}
+          type="checkbox"
+        />
+      </div>
       <div className="crm-cell crm-primary">
         <strong>{profile.displayName}</strong>
         <small>{profile.normalizedEmail || profile.normalizedPhone || "Contatto non disponibile"}</small>
@@ -43,7 +60,7 @@ function CrmListRow({ active, onSelect, profile }) {
         <span className={`customer-band-chip ${customerBandTone(profile.band)}`}>
           {CUSTOMER_SCORE_BAND_LABELS[profile.band] || profile.band}
         </span>
-        <small>{profile.type}</small>
+        <small>{profile.vip ? "VIP" : profile.type}</small>
       </div>
       <div className="crm-cell">
         <strong>{profile.priorityScore}</strong>
@@ -70,7 +87,7 @@ function CrmDetail({ profile }) {
     return (
       <section className="section-card crm-detail-empty">
         <strong>Nessun contatto selezionato</strong>
-        <p>Scegli un cliente o prospect dalla lista per vedere storico e scoring.</p>
+        <p>Scegli un cliente o prospect dalla lista per vedere storico, scoring e note CRM.</p>
       </section>
     );
   }
@@ -86,7 +103,7 @@ function CrmDetail({ profile }) {
           <span className={`customer-band-chip ${customerBandTone(profile.band)}`}>
             {CUSTOMER_SCORE_BAND_LABELS[profile.band] || profile.band}
           </span>
-          <span className="location-chip highlighted">{profile.type}</span>
+          <span className="location-chip highlighted">{profile.vip ? "VIP" : profile.type}</span>
         </div>
       </div>
 
@@ -137,12 +154,20 @@ function CrmDetail({ profile }) {
       </div>
 
       <div className="crm-location-strip">
+        {profile.vip ? <span className="location-chip highlighted">VIP</span> : null}
         {(profile.locations || []).map((location) => (
           <span className="location-chip" key={`${profile.id}-${location.id}`}>
             {location.name}
           </span>
         ))}
       </div>
+
+      {profile.notes ? (
+        <div className="note-box">
+          <strong>Note CRM</strong>
+          <p>{profile.notes}</p>
+        </div>
+      ) : null}
 
       <div className="crm-activity-grid">
         <section className="crm-activity-card">
@@ -205,11 +230,22 @@ function CrmDetail({ profile }) {
   );
 }
 
-export default function AdminCustomerCrmPanel({ profiles, stats }) {
+export default function AdminCustomerCrmPanel({
+  profiles,
+  stats,
+  initialSelectedProfileId = ""
+}) {
   const [query, setQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState("ALL");
   const [bandFilter, setBandFilter] = useState("ALL");
-  const [selectedProfileId, setSelectedProfileId] = useState(profiles[0]?.id || "");
+  const [selectedProfileId, setSelectedProfileId] = useState(
+    initialSelectedProfileId || profiles[0]?.id || ""
+  );
+  const [selectedProfileIds, setSelectedProfileIds] = useState([]);
+  const [savedFilters, setSavedFilters] = useState([]);
+  const [savedFilterId, setSavedFilterId] = useState("");
+  const [bulkMessage, setBulkMessage] = useState("");
+  const [isPending, startBulkTransition] = useTransition();
   const deferredQuery = useDeferredValue(query);
   const normalizedQuery = deferredQuery.trim().toLowerCase();
 
@@ -218,6 +254,47 @@ export default function AdminCustomerCrmPanel({ profiles, stats }) {
     const bandMatch = bandFilter === "ALL" ? true : profile.band === bandFilter;
     return typeMatch && bandMatch && matchesSearch(profile, normalizedQuery);
   });
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSavedFilters() {
+      try {
+        const response = await fetch("/api/admin/filters?pageKey=crm", {
+          cache: "no-store"
+        });
+        const payload = await response.json();
+
+        if (!cancelled && response.ok) {
+          setSavedFilters(payload.filters || []);
+          const defaultFilter = (payload.filters || []).find((item) => item.isDefault);
+
+          if (defaultFilter) {
+            setSavedFilterId(defaultFilter.id);
+            applySavedFilterConfig(defaultFilter, {
+              setQuery,
+              setTypeFilter,
+              setBandFilter
+            });
+          }
+        }
+      } catch {
+        // Ignore bootstrap failures.
+      }
+    }
+
+    void loadSavedFilters();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (initialSelectedProfileId && profiles.some((profile) => profile.id === initialSelectedProfileId)) {
+      setSelectedProfileId(initialSelectedProfileId);
+    }
+  }, [initialSelectedProfileId, profiles]);
 
   useEffect(() => {
     if (!filteredProfiles.length) {
@@ -232,6 +309,112 @@ export default function AdminCustomerCrmPanel({ profiles, stats }) {
 
   const selectedProfile =
     filteredProfiles.find((profile) => profile.id === selectedProfileId) || null;
+  const visibleIds = filteredProfiles.map((profile) => profile.id);
+  const allVisibleSelected =
+    visibleIds.length > 0 && visibleIds.every((id) => selectedProfileIds.includes(id));
+
+  async function reloadSavedFilters() {
+    const response = await fetch("/api/admin/filters?pageKey=crm", {
+      cache: "no-store"
+    });
+    const payload = await response.json();
+
+    if (response.ok) {
+      setSavedFilters(payload.filters || []);
+    }
+  }
+
+  function toggleProfileSelection(profileId, checked) {
+    setSelectedProfileIds((current) =>
+      checked ? [...new Set([...current, profileId])] : current.filter((id) => id !== profileId)
+    );
+  }
+
+  function toggleAllVisible(checked) {
+    setSelectedProfileIds((current) => {
+      if (checked) {
+        return [...new Set([...current, ...visibleIds])];
+      }
+
+      return current.filter((id) => !visibleIds.includes(id));
+    });
+  }
+
+  function runBulkAction(action) {
+    if (!selectedProfileIds.length) {
+      return;
+    }
+
+    startBulkTransition(async () => {
+      setBulkMessage("");
+
+      try {
+        const response = await fetch("/api/admin/customers/bulk", {
+          method: "POST",
+          headers: {
+            "content-type": "application/json"
+          },
+          body: JSON.stringify({
+            action,
+            customerIds: selectedProfileIds
+          })
+        });
+        const payload = await response.json();
+
+        if (!response.ok) {
+          throw new Error(payload.error || "Bulk action CRM fallita.");
+        }
+
+        setBulkMessage(`Azione ${action} applicata a ${payload.updated} profili.`);
+        setSelectedProfileIds([]);
+        window.location.reload();
+      } catch (error) {
+        setBulkMessage(error.message || "Bulk action CRM fallita.");
+      }
+    });
+  }
+
+  async function saveCurrentFilter() {
+    const name = window.prompt("Nome del filtro CRM da salvare");
+
+    if (!name) {
+      return;
+    }
+
+    const response = await fetch("/api/admin/filters", {
+      method: "POST",
+      headers: {
+        "content-type": "application/json"
+      },
+      body: JSON.stringify({
+        pageKey: "crm",
+        name,
+        filters: {
+          query,
+          typeFilter,
+          bandFilter
+        }
+      })
+    });
+    const payload = await response.json();
+
+    if (response.ok) {
+      setSavedFilterId(payload.filter.id);
+      await reloadSavedFilters();
+    }
+  }
+
+  async function deleteCurrentSavedFilter() {
+    if (!savedFilterId) {
+      return;
+    }
+
+    await fetch(`/api/admin/filters?filterId=${encodeURIComponent(savedFilterId)}`, {
+      method: "DELETE"
+    });
+    setSavedFilterId("");
+    await reloadSavedFilters();
+  }
 
   return (
     <div className="page-stack">
@@ -239,7 +422,7 @@ export default function AdminCustomerCrmPanel({ profiles, stats }) {
         <div className="panel-header">
           <div>
             <h2>CRM clienti e prospect</h2>
-            <p>Una sola lista operativa per clienti acquisiti, prospect e scoring commerciale.</p>
+            <p>Lista operativa, scoring leggibile, filtri salvati e azioni bulk su profili.</p>
           </div>
           <div className="row-meta">
             <span>{filteredProfiles.length} visibili</span>
@@ -278,7 +461,7 @@ export default function AdminCustomerCrmPanel({ profiles, stats }) {
                   setQuery(value);
                 });
               }}
-              placeholder="Cerca per nome, email, telefono o sede"
+              placeholder="Cerca per nome, email, telefono, sede o tag"
               type="search"
               value={query}
             />
@@ -321,11 +504,85 @@ export default function AdminCustomerCrmPanel({ profiles, stats }) {
               </button>
             ))}
           </div>
+
+          <div className="menu-filter-grid">
+            <label>
+              <span className="sr-only">Filtro CRM salvato</span>
+              <select
+                onChange={(event) => {
+                  const nextId = event.target.value;
+                  setSavedFilterId(nextId);
+                  const savedFilter = savedFilters.find((item) => item.id === nextId);
+
+                  if (savedFilter) {
+                    applySavedFilterConfig(savedFilter, {
+                      setQuery,
+                      setTypeFilter,
+                      setBandFilter
+                    });
+                  }
+                }}
+                value={savedFilterId}
+              >
+                <option value="">Filtri salvati</option>
+                {savedFilters.map((filter) => (
+                  <option key={filter.id} value={filter.id}>
+                    {filter.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          <div className="micro-actions">
+            <button className="button button-muted" onClick={saveCurrentFilter} type="button">
+              Salva filtro
+            </button>
+            {savedFilterId ? (
+              <button className="button button-muted" onClick={deleteCurrentSavedFilter} type="button">
+                Elimina filtro
+              </button>
+            ) : null}
+          </div>
         </div>
+
+        {selectedProfileIds.length > 0 ? (
+          <div className="reservation-bulk-bar">
+            <strong>{selectedProfileIds.length} profili selezionati</strong>
+            <div className="micro-actions">
+              <button className="button button-muted" onClick={() => runBulkAction("MARK_VIP")} type="button">
+                Segna VIP
+              </button>
+              <button className="button button-muted" onClick={() => runBulkAction("UNMARK_VIP")} type="button">
+                Rimuovi VIP
+              </button>
+              <button className="button button-muted" onClick={() => runBulkAction("ARCHIVE")} type="button">
+                Archivia
+              </button>
+              <button className="button button-muted" onClick={() => runBulkAction("RESTORE")} type="button">
+                Ripristina
+              </button>
+            </div>
+            {isPending ? <span className="helper-copy">Applico azione CRM...</span> : null}
+          </div>
+        ) : null}
+
+        {bulkMessage ? (
+          <p className={bulkMessage.includes("fallita") ? "form-error" : "form-success"}>
+            {bulkMessage}
+          </p>
+        ) : null}
 
         <div className="crm-workspace">
           <div className="crm-list-shell">
             <div className="crm-list-head">
+              <span>
+                <input
+                  checked={allVisibleSelected}
+                  onChange={(event) => toggleAllVisible(event.target.checked)}
+                  type="checkbox"
+                />
+              </span>
               <span>Contatto</span>
               <span>Tipo</span>
               <span>Priority</span>
@@ -338,14 +595,19 @@ export default function AdminCustomerCrmPanel({ profiles, stats }) {
               {filteredProfiles.map((profile) => (
                 <CrmListRow
                   active={profile.id === selectedProfileId}
+                  checked={selectedProfileIds.includes(profile.id)}
                   key={profile.id}
                   onSelect={() => setSelectedProfileId(profile.id)}
+                  onToggle={(checked) => toggleProfileSelection(profile.id, checked)}
                   profile={profile}
                 />
               ))}
 
               {filteredProfiles.length === 0 ? (
-                <p className="empty-copy">Nessun profilo corrisponde ai filtri correnti.</p>
+                <div className="empty-state-card">
+                  <strong>Nessun profilo nei filtri correnti</strong>
+                  <p>Prova a cambiare segmento o ricerca. I filtri CRM possono essere salvati per ruolo e riutilizzati dal team.</p>
+                </div>
               ) : null}
             </div>
           </div>

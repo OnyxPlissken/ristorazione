@@ -10,7 +10,7 @@ import {
 
 export const dynamic = "force-dynamic";
 
-export default async function ClientiCrmPage() {
+export default async function ClientiCrmPage({ searchParams }) {
   const user = await requireUser();
   requirePageAccess(user, "reservations");
   const moduleSummary = summarizeLocationModules(await getAccessibleLocationModules(user));
@@ -37,6 +37,14 @@ export default async function ClientiCrmPage() {
   }
 
   const data = await getCustomerCrmPageData(user);
+  const params = await searchParams;
+  const customerId = String(params?.customerId || "");
 
-  return <AdminCustomerCrmPanel profiles={data.profiles} stats={data.stats} />;
+  return (
+    <AdminCustomerCrmPanel
+      initialSelectedProfileId={customerId}
+      profiles={data.profiles}
+      stats={data.stats}
+    />
+  );
 }

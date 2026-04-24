@@ -93,6 +93,12 @@ const navigation = [
     section: "Sistema"
   },
   {
+    href: "/admin/backup",
+    label: "Backup",
+    page: "console",
+    section: "Sistema"
+  },
+  {
     href: "/admin/console",
     label: "Console Admin",
     page: "console",

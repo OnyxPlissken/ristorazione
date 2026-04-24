@@ -13,7 +13,9 @@ const initialState = {
   success: "",
   canJoinWaitlist: false,
   priorityHint: "",
-  depositNotice: ""
+  depositNotice: "",
+  paymentUrl: "",
+  paymentStatus: ""
 };
 
 function SlotRecommendationStrip({ onSelect, selectedSlot, slots, title }) {
@@ -82,6 +84,12 @@ export default function PublicManageReservationForm({ reservation }) {
   const alternativeSlots = slotState.recommendations.filter(
     (slot) => slot.value !== selectedSlot
   );
+  const activePaymentRequest =
+    reservation.paymentRequests?.find((item) => item.status === "PENDING") ||
+    reservation.paymentRequests?.find((item) => item.status === "PAID") ||
+    null;
+  const paymentUrl = updateState.paymentUrl || activePaymentRequest?.checkoutUrl || "";
+  const paymentStatus = updateState.paymentStatus || activePaymentRequest?.status || "";
 
   useEffect(() => {
     let cancelled = false;
@@ -419,6 +427,30 @@ export default function PublicManageReservationForm({ reservation }) {
           {updateState.depositNotice ? <p className="form-warning">{updateState.depositNotice}</p> : null}
           {cancelState.error ? <p className="form-error">{cancelState.error}</p> : null}
           {cancelState.success ? <p className="form-success">{cancelState.success}</p> : null}
+          {paymentUrl ? (
+            <div className="payment-callout">
+              <div>
+                <strong>
+                  {paymentStatus === "PAID"
+                    ? "Deposito completato"
+                    : "Link deposito disponibile"}
+                </strong>
+                <p>
+                  {paymentStatus === "PAID"
+                    ? "Il deposito risulta gia' pagato. Puoi comunque riaprire il riepilogo."
+                    : "Usa questo link per completare o verificare il deposito associato alla prenotazione."}
+                </p>
+              </div>
+              <a
+                className={paymentStatus === "PAID" ? "button button-muted" : "button button-primary"}
+                href={paymentUrl}
+                rel="noreferrer"
+                target="_blank"
+              >
+                {paymentStatus === "PAID" ? "Vedi pagamento" : "Paga deposito"}
+              </a>
+            </div>
+          ) : null}
           {reservation.depositRequired && !updateState.depositNotice ? (
             <p className="form-warning">
               {reservation.depositAmount

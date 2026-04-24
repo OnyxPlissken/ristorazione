@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { logoutAction } from "../lib/actions/auth-actions";
 import AdminSidebarNav from "./admin-sidebar-nav";
+import AdminGlobalSearch from "./admin-global-search";
 
 function BellIcon() {
   return (
@@ -432,6 +433,8 @@ export default function AdminChrome({
           </div>
 
           <div className="admin-toolbar-actions">
+            <AdminGlobalSearch />
+
             <div className="notification-toast-stack" aria-live="polite">
               {toastItems.map((toast) => (
                 <Link

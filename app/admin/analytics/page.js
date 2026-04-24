@@ -38,7 +38,7 @@ export default async function AnalyticsPage() {
         <div className="panel-header">
           <div>
             <h2>Analytics operativa</h2>
-            <p>Occupazione, no-show, waitlist e clienti ad alto valore letti in chiave gestionale.</p>
+            <p>Misura il valore creato da scoring, waitlist, slot engine, POS e reminder.</p>
           </div>
           <div className="row-meta">
             <span>Ultimi 90 giorni</span>
@@ -53,8 +53,8 @@ export default async function AnalyticsPage() {
             label="No-show 90g"
             value={`${data.stats.noShowLast90d} / ${data.stats.noShowRateLast90d}%`}
           />
-          <MetricCard label="In attesa" value={data.stats.pendingReservations} />
-          <MetricCard label="Waitlist aperta" value={data.stats.waitlistOpen} />
+          <MetricCard label="No-show evitati 30g" value={data.stats.noShowAvoidedLast30d} />
+          <MetricCard label="Coperti recuperati 30g" value={data.stats.recoveredCoversLast30d} />
           <MetricCard
             label="Waitlist convertita 30g"
             value={data.stats.waitlistConvertedLast30d}
@@ -67,8 +67,9 @@ export default async function AnalyticsPage() {
           <MetricCard
             label="Coperti medi"
             value={data.stats.avgGuests.toFixed(1)}
-            hint="media per prenotazione"
+            hint={`base sala ${data.stats.occupancySeatBase} posti`}
           />
+          <MetricCard label="Transazioni POS 90g" value={data.stats.posTransactionsLast90d} />
           <MetricCard label={CUSTOMER_SCORE_BAND_SUMMARY_LABELS.A} value={data.stats.highValueCustomers} />
           <MetricCard label={CUSTOMER_SCORE_BAND_SUMMARY_LABELS.D} value={data.stats.riskCustomers} />
         </div>
@@ -79,7 +80,7 @@ export default async function AnalyticsPage() {
           <div className="panel-header">
             <div>
               <h2>Performance slot</h2>
-              <p>Domanda e affidabilita degli orari piu' usati negli ultimi 30 giorni.</p>
+              <p>Domanda, coperti, no-show e resa delle fasce orarie più usate negli ultimi 30 giorni.</p>
             </div>
           </div>
 
@@ -87,16 +88,18 @@ export default async function AnalyticsPage() {
             <div className="analytics-table-head">
               <span>Slot</span>
               <span>Prenotazioni</span>
-              <span>Completate</span>
-              <span>No-show</span>
+              <span>Coperti</span>
+              <span>Occupazione</span>
+              <span>Ricavi</span>
             </div>
 
             {data.slotPerformance.map((slot) => (
               <div className="analytics-table-row" key={slot.label}>
                 <strong>{slot.label}</strong>
                 <span>{slot.reservations}</span>
-                <span>{slot.completed}</span>
-                <span>{slot.noShow}</span>
+                <span>{slot.covers}</span>
+                <span>{slot.occupancyRate}%</span>
+                <span>{formatCurrency(slot.revenue)}</span>
               </div>
             ))}
 
@@ -109,8 +112,39 @@ export default async function AnalyticsPage() {
         <section className="panel-card">
           <div className="panel-header">
             <div>
+              <h2>Ricavo per tavolo</h2>
+              <p>Focus sui tavoli che stanno generando più valore negli ultimi 30 giorni.</p>
+            </div>
+          </div>
+
+          <div className="analytics-table">
+            <div className="analytics-table-head">
+              <span>Tavolo</span>
+              <span>Prenotazioni</span>
+              <span>Ricavi</span>
+            </div>
+
+            {data.tableRevenue.map((table) => (
+              <div className="analytics-table-row" key={table.label}>
+                <strong>{table.label}</strong>
+                <span>{table.reservations}</span>
+                <span>{formatCurrency(table.revenue)}</span>
+              </div>
+            ))}
+
+            {data.tableRevenue.length === 0 ? (
+              <p className="empty-copy">Nessun ricavo agganciato ai tavoli per il periodo selezionato.</p>
+            ) : null}
+          </div>
+        </section>
+      </section>
+
+      <section className="analytics-grid">
+        <section className="panel-card">
+          <div className="panel-header">
+            <div>
               <h2>Top clienti</h2>
-              <p>Scoring sintetico per priorita, affidabilita e valore storico.</p>
+              <p>Scoring sintetico per priorità, affidabilità, VIP e valore storico.</p>
             </div>
           </div>
 
@@ -128,6 +162,7 @@ export default async function AnalyticsPage() {
                   <strong>{customer.displayName}</strong>
                   <small>
                     {customer.completedReservations} completate / {customer.noShowCount} no-show
+                    {customer.vip ? " / VIP" : ""}
                   </small>
                 </div>
                 <span className={`customer-band-chip ${customerBandTone(customer.band || "B")}`}>
@@ -143,35 +178,35 @@ export default async function AnalyticsPage() {
             ) : null}
           </div>
         </section>
-      </section>
 
-      <section className="panel-card">
-        <div className="panel-header">
-          <div>
-            <h2>Confronto sedi</h2>
-            <p>Pressione operativa per sede su prenotazioni, attese e no-show.</p>
-          </div>
-        </div>
-
-        <div className="analytics-table">
-          <div className="analytics-table-head analytics-table-head-locations">
-            <span>Sede</span>
-            <span>Prenotazioni</span>
-            <span>In attesa</span>
-            <span>No-show</span>
-            <span>Waitlist aperta</span>
-          </div>
-
-          {data.locations.map((location) => (
-            <div className="analytics-table-row analytics-table-row-locations" key={location.id}>
-              <strong>{location.name}</strong>
-              <span>{location.reservations}</span>
-              <span>{location.pending}</span>
-              <span>{location.noShow}</span>
-              <span>{location.waitlistOpen}</span>
+        <section className="panel-card">
+          <div className="panel-header">
+            <div>
+              <h2>Confronto sedi</h2>
+              <p>Pressione operativa per sede su prenotazioni, attese, no-show e ricavi.</p>
             </div>
-          ))}
-        </div>
+          </div>
+
+          <div className="analytics-table">
+            <div className="analytics-table-head analytics-table-head-locations">
+              <span>Sede</span>
+              <span>Prenotazioni</span>
+              <span>In attesa</span>
+              <span>No-show</span>
+              <span>Ricavi</span>
+            </div>
+
+            {data.locations.map((location) => (
+              <div className="analytics-table-row analytics-table-row-locations" key={location.id}>
+                <strong>{location.name}</strong>
+                <span>{location.reservations}</span>
+                <span>{location.pending}</span>
+                <span>{location.noShow}</span>
+                <span>{formatCurrency(location.revenue)}</span>
+              </div>
+            ))}
+          </div>
+        </section>
       </section>
     </div>
   );

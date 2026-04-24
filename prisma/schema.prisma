@@ -48,12 +48,22 @@ enum NotificationChannel {
   SMS
   EMAIL
   INTERNAL
+  WEBHOOK
 }
 
 enum NotificationLogStatus {
   SENT
   FAILED
   SKIPPED
+}
+
+enum NotificationJobStatus {
+  PENDING
+  PROCESSING
+  RETRYING
+  COMPLETED
+  FAILED
+  CANCELLED
 }
 
 enum TableSessionStatus {
@@ -75,6 +85,19 @@ enum CustomerScoreBand {
   D
 }
 
+enum PaymentRequestStatus {
+  PENDING
+  PAID
+  FAILED
+  CANCELLED
+  EXPIRED
+}
+
+enum BackupSnapshotKind {
+  CONFIG
+  FULL
+}
+
 model User {
   id             String         @id @default(cuid())
   name           String
@@ -82,12 +105,16 @@ model User {
   passwordHash   String
   role           UserRole
   active         Boolean        @default(true)
+  archivedAt     DateTime?
+  archiveReason  String?
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
   sessions       Session[]
   locationAccess UserLocation[]
   auditLogs      AuditLog[]
   notificationReads AdminNotificationRead[]
+  savedFilters   SavedFilter[]
+  backups        BackupSnapshot[]
 }
 
 model Session {
@@ -108,6 +135,8 @@ model Location {
   phone               String?
   email               String?
   reservationEnabled  Boolean              @default(true)
+  archivedAt          DateTime?
+  archiveReason       String?
   createdAt           DateTime             @default(now())
   updatedAt           DateTime             @updatedAt
   openingHours        OpeningHour[]
@@ -122,8 +151,13 @@ model Location {
   userAssignments     UserLocation[]
   waitlistEntries     WaitlistEntry[]
   notificationLogs    NotificationLog[]
+  notificationJobs    NotificationJob[]
   adminNotifications  AdminNotification[]
   auditLogs           AuditLog[]
+  savedFilters        SavedFilter[]
+  backups             BackupSnapshot[]
+  paymentRequests     PaymentRequest[]
+  posTransactions     PosTransaction[]
 }
 
 model RolePermission {
@@ -164,6 +198,14 @@ model LocationTechnicalSetting {
   customerTableSelectionEnabled Boolean @default(false)
   deliveryEnabled         Boolean   @default(false)
   paymentsEnabled         Boolean   @default(false)
+  notificationWebhookEnabled Boolean @default(false)
+  notificationWebhookUrl  String?
+  notificationWebhookSecret String?
+  posEnabled              Boolean   @default(false)
+  posProvider             String?
+  posApiBaseUrl           String?
+  posApiKey               String?
+  posWebhookSecret        String?
   googleBusinessEnabled   Boolean   @default(false)
   reservationEmails       String?
   deliveryProvider        String?
@@ -197,6 +239,15 @@ model LocationTechnicalSetting {
   smtpPassword            String?
   smtpFromName            String?
   smtpFromEmail           String?
+  crmReminderLeadHours    Int       @default(24)
+  crmBirthdayEnabled      Boolean   @default(false)
+  crmBirthdayTemplate     String?
+  crmVipReminderEnabled   Boolean   @default(false)
+  crmVipReminderTemplate  String?
+  crmRiskReminderEnabled  Boolean   @default(false)
+  crmRiskReminderTemplate String?
+  crmNoShowReminderEnabled Boolean  @default(false)
+  crmNoShowReminderTemplate String?
   technicalNotes          String?
   createdAt               DateTime  @default(now())
   updatedAt               DateTime  @updatedAt
@@ -269,6 +320,8 @@ model DiningTable {
   layoutShape  TableLayoutShape @default(RECT)
   combinableWithIds String[] @default([])
   active       Boolean       @default(true)
+  archivedAt   DateTime?
+  archiveReason String?
   createdAt    DateTime      @default(now())
   updatedAt    DateTime      @updatedAt
   location     Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
@@ -288,6 +341,8 @@ model Menu {
   deliveryEnabled       Boolean       @default(false)
   appliesToAllLocations Boolean       @default(false)
   locationIds           String[]      @default([])
+  archivedAt            DateTime?
+  archiveReason         String?
   createdAt             DateTime      @default(now())
   updatedAt             DateTime      @updatedAt
   location              Location      @relation(fields: [locationId], references: [id], onDelete: Cascade)
@@ -322,6 +377,10 @@ model CustomerProfile {
   displayName           String
   normalizedEmail       String?           @unique
   normalizedPhone       String?           @unique
+  vip                   Boolean           @default(false)
+  birthDate             DateTime?
+  tags                  String[]          @default([])
+  notes                 String?
   firstSeenAt           DateTime          @default(now())
   lastReservationAt     DateTime?
   lastCompletedAt       DateTime?
@@ -337,10 +396,15 @@ model CustomerProfile {
   valueScore            Int               @default(0)
   priorityScore         Int               @default(0)
   band                  CustomerScoreBand @default(B)
+  archivedAt            DateTime?
+  archiveReason         String?
   createdAt             DateTime          @default(now())
   updatedAt             DateTime          @updatedAt
   reservations          Reservation[]
   waitlistEntries       WaitlistEntry[]
+  notificationJobs      NotificationJob[]
+  paymentRequests       PaymentRequest[]
+  posTransactions       PosTransaction[]
 
   @@index([band, priorityScore])
   @@index([lastReservationAt])
@@ -382,6 +446,8 @@ model Reservation {
   depositAmount Decimal?        @db.Decimal(10, 2)
   status      ReservationStatus @default(IN_ATTESA)
   source      ReservationSource @default(PUBBLICA)
+  archivedAt  DateTime?
+  archiveReason String?
   createdAt   DateTime          @default(now())
   updatedAt   DateTime          @updatedAt
   location    Location          @relation(fields: [locationId], references: [id], onDelete: Cascade)
@@ -389,8 +455,11 @@ model Reservation {
   customerProfile CustomerProfile? @relation(fields: [customerProfileId], references: [id], onDelete: SetNull)
   waitlistEntries WaitlistEntry[]
   notificationLogs NotificationLog[]
+  notificationJobs NotificationJob[]
   adminNotifications AdminNotification[]
   auditLogs   AuditLog[]
+  paymentRequests PaymentRequest[]
+  posTransactions PosTransaction[]
 }
 
 model WaitlistEntry {
@@ -408,32 +477,72 @@ model WaitlistEntry {
   priorityScore     Int            @default(0)
   status            WaitlistStatus @default(OPEN)
   notifiedAt        DateTime?
+  archivedAt        DateTime?
+  archiveReason     String?
   createdAt         DateTime       @default(now())
   updatedAt         DateTime       @updatedAt
   location          Location       @relation(fields: [locationId], references: [id], onDelete: Cascade)
   reservation       Reservation?   @relation(fields: [reservationId], references: [id], onDelete: SetNull)
   customerProfile   CustomerProfile? @relation(fields: [customerProfileId], references: [id], onDelete: SetNull)
   notificationLogs  NotificationLog[]
+  notificationJobs  NotificationJob[]
   adminNotifications AdminNotification[]
 }
 
 model NotificationLog {
   id             String                @id @default(cuid())
+  jobId          String?
   locationId     String
   reservationId  String?
   waitlistEntryId String?
   channel        NotificationChannel
   status         NotificationLogStatus @default(SENT)
   event          String
+  attemptNumber  Int                   @default(1)
   destination    String?
   subject        String?
   contentPreview String?
   providerResponse String?
   errorMessage   String?
   createdAt      DateTime              @default(now())
+  job            NotificationJob?      @relation(fields: [jobId], references: [id], onDelete: SetNull)
   location       Location              @relation(fields: [locationId], references: [id], onDelete: Cascade)
   reservation    Reservation?          @relation(fields: [reservationId], references: [id], onDelete: SetNull)
   waitlistEntry  WaitlistEntry?        @relation(fields: [waitlistEntryId], references: [id], onDelete: SetNull)
+}
+
+model NotificationJob {
+  id               String                @id @default(cuid())
+  locationId       String?
+  reservationId    String?
+  waitlistEntryId  String?
+  customerProfileId String?
+  paymentRequestId String?
+  channel          NotificationChannel
+  event            String
+  destination      String?
+  subject          String?
+  content          String?
+  payload          Json?
+  status           NotificationJobStatus @default(PENDING)
+  attempts         Int                   @default(0)
+  maxAttempts      Int                   @default(3)
+  nextAttemptAt    DateTime              @default(now())
+  lastAttemptAt    DateTime?
+  completedAt      DateTime?
+  lastError        String?
+  providerResponse String?
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  logs             NotificationLog[]
+  location         Location?             @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  reservation      Reservation?          @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  waitlistEntry    WaitlistEntry?        @relation(fields: [waitlistEntryId], references: [id], onDelete: SetNull)
+  customerProfile  CustomerProfile?      @relation(fields: [customerProfileId], references: [id], onDelete: SetNull)
+  paymentRequest   PaymentRequest?       @relation(fields: [paymentRequestId], references: [id], onDelete: SetNull)
+
+  @@index([status, nextAttemptAt])
+  @@index([locationId, event, status])
 }
 
 model AuditLog {
@@ -450,6 +559,88 @@ model AuditLog {
   location      Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
   reservation   Reservation? @relation(fields: [reservationId], references: [id], onDelete: SetNull)
   user          User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+}
+
+model SavedFilter {
+  id         String    @id @default(cuid())
+  userId     String?
+  role       UserRole?
+  pageKey    String
+  name       String
+  locationId String?
+  filters    Json
+  isDefault  Boolean   @default(false)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+  user       User?     @relation(fields: [userId], references: [id], onDelete: SetNull)
+  location   Location? @relation(fields: [locationId], references: [id], onDelete: SetNull)
+
+  @@index([pageKey, role, locationId])
+  @@index([userId, pageKey])
+}
+
+model BackupSnapshot {
+  id          String             @id @default(cuid())
+  locationId  String?
+  createdById String?
+  kind        BackupSnapshotKind @default(CONFIG)
+  name        String
+  notes       String?
+  payload     Json
+  createdAt   DateTime           @default(now())
+  location    Location?          @relation(fields: [locationId], references: [id], onDelete: SetNull)
+  createdBy   User?              @relation(fields: [createdById], references: [id], onDelete: SetNull)
+
+  @@index([locationId, createdAt])
+}
+
+model PaymentRequest {
+  id                String               @id @default(cuid())
+  token             String               @unique @default(cuid())
+  locationId        String
+  reservationId     String?
+  customerProfileId String?
+  provider          String?
+  externalReference String?
+  amount            Decimal              @db.Decimal(10, 2)
+  currency          String               @default("EUR")
+  status            PaymentRequestStatus @default(PENDING)
+  checkoutUrl       String?
+  paidAt            DateTime?
+  expiresAt         DateTime?
+  rawPayload        Json?
+  createdAt         DateTime             @default(now())
+  updatedAt         DateTime             @updatedAt
+  location          Location             @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  reservation       Reservation?         @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  customerProfile   CustomerProfile?     @relation(fields: [customerProfileId], references: [id], onDelete: SetNull)
+  notificationJobs  NotificationJob[]
+
+  @@index([locationId, status])
+  @@index([reservationId, status])
+  @@unique([locationId, externalReference])
+}
+
+model PosTransaction {
+  id                String           @id @default(cuid())
+  locationId        String
+  reservationId     String?
+  customerProfileId String?
+  source            String           @default("WEBHOOK")
+  provider          String?
+  externalId        String
+  totalAmount       Decimal          @db.Decimal(10, 2)
+  guests            Int?
+  occurredAt        DateTime
+  payload           Json?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+  location          Location         @relation(fields: [locationId], references: [id], onDelete: Cascade)
+  reservation       Reservation?     @relation(fields: [reservationId], references: [id], onDelete: SetNull)
+  customerProfile   CustomerProfile? @relation(fields: [customerProfileId], references: [id], onDelete: SetNull)
+
+  @@unique([locationId, externalId])
+  @@index([occurredAt])
 }
 
 model TableSession {

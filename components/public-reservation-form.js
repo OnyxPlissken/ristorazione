@@ -9,7 +9,9 @@ const initialState = {
   success: "",
   canJoinWaitlist: false,
   priorityHint: "",
-  depositNotice: ""
+  depositNotice: "",
+  paymentUrl: "",
+  paymentStatus: ""
 };
 
 function todayValue() {
@@ -431,6 +433,25 @@ export default function PublicReservationForm({ locations }) {
       {state?.success ? <p className="form-success">{state.success}</p> : null}
       {state?.priorityHint ? <p className="helper-copy">{state.priorityHint}</p> : null}
       {state?.depositNotice ? <p className="form-warning">{state.depositNotice}</p> : null}
+      {state?.paymentUrl ? (
+        <div className="payment-callout">
+          <div>
+            <strong>Completa il deposito</strong>
+            <p>
+              Il link pagamento e' gia' pronto. Puoi aprirlo subito oppure usare quello inviato al
+              cliente.
+            </p>
+          </div>
+          <a
+            className="button button-primary"
+            href={state.paymentUrl}
+            rel="noreferrer"
+            target="_blank"
+          >
+            Vai al pagamento
+          </a>
+        </div>
+      ) : null}
 
       <div className="cta-row">
         <button

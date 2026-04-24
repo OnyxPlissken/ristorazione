@@ -8,7 +8,9 @@
     "build": "next build",
     "start": "next start",
     "db:push": "prisma db push",
-    "db:seed": "node scripts/seed.mjs"
+    "db:seed": "node scripts/seed.mjs",
+    "pinterest:csv": "node scripts/sharepoint-to-pinterest-csv.mjs",
+    "test:pinterest:csv": "node --test scripts/sharepoint-to-pinterest-csv.test.mjs"
   },
   "dependencies": {
     "@prisma/client": "^6.17.1",

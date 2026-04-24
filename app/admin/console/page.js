@@ -68,6 +68,11 @@ const consolePanels = {
       key: "email",
       label: "SMTP",
       description: "Provider email e mittente transazionale."
+    },
+    {
+      key: "crm",
+      label: "Automazioni CRM",
+      description: "Reminder per VIP, rischio, no-show e compleanni."
     }
   ],
   integrazioni: [
@@ -85,6 +90,16 @@ const consolePanels = {
       key: "payments",
       label: "Pagamenti",
       description: "Checkout, chiavi e webhook provider."
+    },
+    {
+      key: "pos",
+      label: "POS",
+      description: "Ingest transazioni e sincronizzazione spesa reale."
+    },
+    {
+      key: "webhooks",
+      label: "Webhook",
+      description: "Mirror eventi booking verso sistemi esterni."
     }
   ],
   operativita: [
@@ -692,6 +707,101 @@ export default async function ConsoleAdminPage({ searchParams }) {
                     </label>
                   </div>
                 </section>
+
+                <section className="console-block" hidden={selectedPanel !== "crm"}>
+                  <div className="console-block-head">
+                    <h4>Reminder CRM e compleanni</h4>
+                    <p>Messaggi differenziati per VIP, rischio, storico no-show e compleanni.</p>
+                  </div>
+
+                  <div className="form-grid">
+                    <label>
+                      <span>Ore anticipo reminder</span>
+                      <input
+                        defaultValue={technical.crmReminderLeadHours || 24}
+                        min="1"
+                        name="crmReminderLeadHours"
+                        type="number"
+                      />
+                    </label>
+                    <label className="checkbox-item">
+                      <input
+                        defaultChecked={Boolean(technical.crmVipReminderEnabled)}
+                        name="crmVipReminderEnabled"
+                        type="checkbox"
+                      />
+                      <span>Reminder VIP dedicato</span>
+                    </label>
+                    <label className="full-width">
+                      <span>Template VIP</span>
+                      <textarea
+                        defaultValue={
+                          technical.crmVipReminderTemplate ||
+                          "Ciao {{cliente}}, il tuo tavolo da {{sede}} ti aspetta il {{data}} alle {{orario}}. Link: {{link_prenotazione}}"
+                        }
+                        name="crmVipReminderTemplate"
+                        rows="4"
+                      />
+                    </label>
+                    <label className="checkbox-item">
+                      <input
+                        defaultChecked={Boolean(technical.crmRiskReminderEnabled)}
+                        name="crmRiskReminderEnabled"
+                        type="checkbox"
+                      />
+                      <span>Reminder clienti a rischio</span>
+                    </label>
+                    <label className="full-width">
+                      <span>Template rischio</span>
+                      <textarea
+                        defaultValue={
+                          technical.crmRiskReminderTemplate ||
+                          "Ciao {{cliente}}, ricordati la prenotazione da {{sede}} per {{data}} alle {{orario}}. Gestiscila qui: {{link_prenotazione}}"
+                        }
+                        name="crmRiskReminderTemplate"
+                        rows="4"
+                      />
+                    </label>
+                    <label className="checkbox-item">
+                      <input
+                        defaultChecked={Boolean(technical.crmNoShowReminderEnabled)}
+                        name="crmNoShowReminderEnabled"
+                        type="checkbox"
+                      />
+                      <span>Reminder storico no-show</span>
+                    </label>
+                    <label className="full-width">
+                      <span>Template no-show</span>
+                      <textarea
+                        defaultValue={
+                          technical.crmNoShowReminderTemplate ||
+                          "Ciao {{cliente}}, conferma la tua presenza per {{data}} alle {{orario}} da {{sede}}. Link: {{link_prenotazione}}"
+                        }
+                        name="crmNoShowReminderTemplate"
+                        rows="4"
+                      />
+                    </label>
+                    <label className="checkbox-item">
+                      <input
+                        defaultChecked={Boolean(technical.crmBirthdayEnabled)}
+                        name="crmBirthdayEnabled"
+                        type="checkbox"
+                      />
+                      <span>Messaggio compleanno</span>
+                    </label>
+                    <label className="full-width">
+                      <span>Template compleanno</span>
+                      <textarea
+                        defaultValue={
+                          technical.crmBirthdayTemplate ||
+                          "Buon compleanno {{cliente}} da {{sede}}. Ti aspettiamo presto."
+                        }
+                        name="crmBirthdayTemplate"
+                        rows="4"
+                      />
+                    </label>
+                  </div>
+                </section>
               </section>
 
               <section className="console-section-panel" hidden={selectedSection !== "integrazioni"}>
@@ -791,7 +901,7 @@ export default async function ConsoleAdminPage({ searchParams }) {
                 <section className="console-block" hidden={selectedPanel !== "payments"}>
                   <div className="console-block-head">
                     <h4>Pagamenti tavolo</h4>
-                    <p>Provider, chiavi e URL di checkout per il pagamento diretto.</p>
+                    <p>Provider, chiavi, webhook e checkout per tavolo e depositi prenotazione.</p>
                   </div>
 
                   <div className="form-grid">
@@ -834,6 +944,98 @@ export default async function ConsoleAdminPage({ searchParams }) {
                       <input
                         defaultValue={technical.paymentWebhookSecret || ""}
                         name="paymentWebhookSecret"
+                        type="text"
+                      />
+                    </label>
+                  </div>
+                </section>
+
+                <section className="console-block" hidden={selectedPanel !== "pos"}>
+                  <div className="console-block-head">
+                    <h4>POS e scontrini</h4>
+                    <p>Endpoint, provider e secret per importare scontrini reali e consolidare il CRM.</p>
+                  </div>
+
+                  <div className="form-grid">
+                    <label className="checkbox-item">
+                      <input
+                        defaultChecked={Boolean(technical.posEnabled)}
+                        name="posEnabled"
+                        type="checkbox"
+                      />
+                      <span>Integrazione POS attiva</span>
+                    </label>
+                    <label>
+                      <span>Provider POS</span>
+                      <input
+                        defaultValue={technical.posProvider || ""}
+                        name="posProvider"
+                        placeholder="Custom / Lightspeed / Cassa in cloud"
+                        type="text"
+                      />
+                    </label>
+                    <label>
+                      <span>Base URL POS</span>
+                      <input
+                        defaultValue={technical.posApiBaseUrl || ""}
+                        name="posApiBaseUrl"
+                        placeholder="https://pos.partner.com/api"
+                        type="text"
+                      />
+                    </label>
+                    <label className="full-width">
+                      <span>API key POS</span>
+                      <input
+                        defaultValue={technical.posApiKey || ""}
+                        name="posApiKey"
+                        type="text"
+                      />
+                    </label>
+                    <label className="full-width">
+                      <span>Webhook secret POS</span>
+                      <input
+                        defaultValue={technical.posWebhookSecret || ""}
+                        name="posWebhookSecret"
+                        type="text"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="note-box">
+                    <strong>Endpoint ingest</strong>
+                    <p>/api/integrations/pos</p>
+                  </div>
+                </section>
+
+                <section className="console-block" hidden={selectedPanel !== "webhooks"}>
+                  <div className="console-block-head">
+                    <h4>Webhook eventi</h4>
+                    <p>Mirror verso sistemi esterni di booking, pagamento, waitlist e reminder.</p>
+                  </div>
+
+                  <div className="form-grid">
+                    <label className="checkbox-item">
+                      <input
+                        defaultChecked={Boolean(technical.notificationWebhookEnabled)}
+                        name="notificationWebhookEnabled"
+                        type="checkbox"
+                      />
+                      <span>Webhook mirror attivo</span>
+                    </label>
+                    <label className="full-width">
+                      <span>Webhook URL</span>
+                      <input
+                        defaultValue={technical.notificationWebhookUrl || ""}
+                        name="notificationWebhookUrl"
+                        placeholder="https://erp.partner.com/webhooks/coperto"
+                        type="text"
+                      />
+                    </label>
+                    <label className="full-width">
+                      <span>Webhook secret</span>
+                      <input
+                        defaultValue={technical.notificationWebhookSecret || ""}
+                        name="notificationWebhookSecret"
                         type="text"
                       />
                     </label>
