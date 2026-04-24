@@ -67,7 +67,7 @@ export default function AdminChrome({
   userName,
   userRoleLabel
 }) {
-  const [sidebarHidden, setSidebarHidden] = useState(true);
+  const [sidebarHidden, setSidebarHidden] = useState(false);
   const [isCompactViewport, setIsCompactViewport] = useState(false);
   const [bellOpen, setBellOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState(initialReservationSummary?.pendingCount || 0);
@@ -387,7 +387,6 @@ export default function AdminChrome({
               <Link className="brand" href="/admin">
                 Coperto
               </Link>
-              <p className="sidebar-copy">Gestionale ristorazione in italiano.</p>
             </div>
           </div>
 
@@ -426,9 +425,8 @@ export default function AdminChrome({
             </button>
 
             <div className="admin-topbar-copy">
-              <div className="eyebrow">Backoffice tecnico</div>
-              <h1>Amministrazione Coperto</h1>
-              <p>Gestione operativa, configurazione e controllo sedi.</p>
+              <h1>Pannello amministrativo</h1>
+              <p>Operativita, configurazione e controllo.</p>
             </div>
           </div>
 
