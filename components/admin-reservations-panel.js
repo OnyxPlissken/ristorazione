@@ -604,7 +604,7 @@ export default function AdminReservationsPanel({
       <div className="panel-header reservation-page-header">
         <div>
           <h2>Prenotazioni</h2>
-          <p>Vista operativa con tabella, filtri rapidi e inspector laterale.</p>
+          <p>Vista operativa con tabella, filtri rapidi e dettaglio esteso.</p>
         </div>
         <div className="row-meta">
           <span>{filteredReservations.length} risultati</span>
@@ -631,123 +631,125 @@ export default function AdminReservationsPanel({
         </div>
       </div>
 
-      <div className="reservation-toolbar reservation-toolbar-compact">
-        <label className="search-input-shell reservation-search">
-          <span className="sr-only">Cerca prenotazione</span>
-          <input
-            onChange={(event) => {
-              const value = event.target.value;
-              startTransition(() => {
-                setQuery(value);
-              });
-            }}
-            placeholder="Cerca per cliente, email, telefono, tavolo o note"
-            type="search"
-            value={query}
-          />
-        </label>
-
-        <div className="reservation-filter-cluster">
-          <label>
-            <span>Sede</span>
-            <select
-              onChange={(event) => setLocationFilter(event.target.value)}
-              value={locationFilter}
-            >
-              <option value="ALL">Tutte le sedi</option>
-              {locationOptions.map((location) => (
-                <option key={location.value} value={location.value}>
-                  {location.label}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            <span>Filtro salvato</span>
-            <select
+      <div className="reservation-controls-stack">
+        <div className="reservation-toolbar reservation-toolbar-compact">
+          <label className="search-input-shell reservation-search">
+            <span className="sr-only">Cerca prenotazione</span>
+            <input
               onChange={(event) => {
-                const nextId = event.target.value;
-                setSavedFilterId(nextId);
-                const savedFilter = savedFilters.find((item) => item.id === nextId);
-
-                if (savedFilter) {
-                  applySavedFilterConfig(savedFilter, {
-                    setQuery,
-                    setStatusFilter,
-                    setLocationFilter
-                  });
-                }
+                const value = event.target.value;
+                startTransition(() => {
+                  setQuery(value);
+                });
               }}
-              value={savedFilterId}
-            >
-              <option value="">Nessun filtro</option>
-              {savedFilters.map((filter) => (
-                <option key={filter.id} value={filter.id}>
-                  {filter.name}
-                </option>
-              ))}
-            </select>
+              placeholder="Cerca per cliente, email, telefono, tavolo o note"
+              type="search"
+              value={query}
+            />
           </label>
-        </div>
 
-        <div className="micro-actions reservation-toolbar-actions">
-          <button className="button button-muted" onClick={saveCurrentFilter} type="button">
-            Salva filtro
-          </button>
-          {savedFilterId ? (
-            <button className="button button-muted" onClick={deleteCurrentSavedFilter} type="button">
-              Elimina filtro
-            </button>
-          ) : null}
-        </div>
-      </div>
+          <div className="reservation-filter-cluster">
+            <label>
+              <span>Sede</span>
+              <select
+                onChange={(event) => setLocationFilter(event.target.value)}
+                value={locationFilter}
+              >
+                <option value="ALL">Tutte le sedi</option>
+                {locationOptions.map((location) => (
+                  <option key={location.value} value={location.value}>
+                    {location.label}
+                  </option>
+                ))}
+              </select>
+            </label>
 
-      <div className="reservation-status-strip">
-        {statusOrder.map((status) => (
-          <ReservationStatusTab
-            active={statusFilter === status}
-            count={counts[status] || 0}
-            key={status}
-            label={status === "ALL" ? "Tutte" : RESERVATION_STATUS_LABELS[status]}
-            onClick={() => {
-              startTransition(() => {
-                setStatusFilter(status);
-              });
-            }}
-          />
-        ))}
-      </div>
+            <label>
+              <span>Filtro salvato</span>
+              <select
+                onChange={(event) => {
+                  const nextId = event.target.value;
+                  setSavedFilterId(nextId);
+                  const savedFilter = savedFilters.find((item) => item.id === nextId);
 
-      {selectedReservationIds.length > 0 ? (
-        <div className="reservation-bulk-bar">
-          <strong>{selectedReservationIds.length} selezionate</strong>
-          <div className="micro-actions">
-            <button className="button button-muted" onClick={() => runBulkAction("CONFIRM")} type="button">
-              Conferma
-            </button>
-            <button className="button button-muted" onClick={() => runBulkAction("COMPLETE")} type="button">
-              Completa
-            </button>
-            <button className="button button-muted" onClick={() => runBulkAction("CANCEL")} type="button">
-              Cancella
-            </button>
-            <button className="button button-muted" onClick={() => runBulkAction("NO_SHOW")} type="button">
-              No show
-            </button>
-            <button className="button button-muted" onClick={() => runBulkAction("ARCHIVE")} type="button">
-              Archivia
-            </button>
+                  if (savedFilter) {
+                    applySavedFilterConfig(savedFilter, {
+                      setQuery,
+                      setStatusFilter,
+                      setLocationFilter
+                    });
+                  }
+                }}
+                value={savedFilterId}
+              >
+                <option value="">Nessun filtro</option>
+                {savedFilters.map((filter) => (
+                  <option key={filter.id} value={filter.id}>
+                    {filter.name}
+                  </option>
+                ))}
+              </select>
+            </label>
           </div>
-          {isPending ? <span className="helper-copy">Applico azione bulk...</span> : null}
-        </div>
-      ) : null}
 
-      {bulkMessage ? (
-        <p className={bulkMessage.includes("fallita") ? "form-error" : "form-success"}>
-          {bulkMessage}
-        </p>
-      ) : null}
+          <div className="micro-actions reservation-toolbar-actions">
+            <button className="button button-muted" onClick={saveCurrentFilter} type="button">
+              Salva filtro
+            </button>
+            {savedFilterId ? (
+              <button className="button button-muted" onClick={deleteCurrentSavedFilter} type="button">
+                Elimina filtro
+              </button>
+            ) : null}
+          </div>
+        </div>
+
+        <div className="reservation-status-strip">
+          {statusOrder.map((status) => (
+            <ReservationStatusTab
+              active={statusFilter === status}
+              count={counts[status] || 0}
+              key={status}
+              label={status === "ALL" ? "Tutte" : RESERVATION_STATUS_LABELS[status]}
+              onClick={() => {
+                startTransition(() => {
+                  setStatusFilter(status);
+                });
+              }}
+            />
+          ))}
+        </div>
+
+        {selectedReservationIds.length > 0 ? (
+          <div className="reservation-bulk-bar">
+            <strong>{selectedReservationIds.length} selezionate</strong>
+            <div className="micro-actions">
+              <button className="button button-muted" onClick={() => runBulkAction("CONFIRM")} type="button">
+                Conferma
+              </button>
+              <button className="button button-muted" onClick={() => runBulkAction("COMPLETE")} type="button">
+                Completa
+              </button>
+              <button className="button button-muted" onClick={() => runBulkAction("CANCEL")} type="button">
+                Cancella
+              </button>
+              <button className="button button-muted" onClick={() => runBulkAction("NO_SHOW")} type="button">
+                No show
+              </button>
+              <button className="button button-muted" onClick={() => runBulkAction("ARCHIVE")} type="button">
+                Archivia
+              </button>
+            </div>
+            {isPending ? <span className="helper-copy">Applico azione bulk...</span> : null}
+          </div>
+        ) : null}
+
+        {bulkMessage ? (
+          <p className={bulkMessage.includes("fallita") ? "form-error" : "form-success"}>
+            {bulkMessage}
+          </p>
+        ) : null}
+      </div>
 
       <div className="reservation-main-stack">
         <section className="section-card reservation-table-card">
