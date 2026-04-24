@@ -175,7 +175,7 @@ function ReservationInspector({ canManageReservations, reservation }) {
 
   if (!reservation) {
     return (
-      <section className="section-card reservation-inspector-card reservation-inspector-empty">
+      <section className="reservation-inspector-card reservation-inspector-empty">
         <strong>Nessuna prenotazione selezionata</strong>
         <p>
           Scegli una riga dalla tabella per vedere cliente, tavolo, deposito, storico e azioni.
@@ -190,7 +190,7 @@ function ReservationInspector({ canManageReservations, reservation }) {
   const customerProfile = reservation.customerProfileSummary;
 
   return (
-    <section className="section-card reservation-inspector-card">
+    <section className="reservation-inspector-card">
       <form action={action} className="entity-form">
         <input name="reservationId" type="hidden" value={reservation.id} />
 
@@ -749,7 +749,7 @@ export default function AdminReservationsPanel({
         </p>
       ) : null}
 
-      <div className="reservation-main-grid">
+      <div className="reservation-main-stack">
         <section className="section-card reservation-table-card">
           <div className="reservation-table-toolbar">
             <div>
@@ -807,10 +807,21 @@ export default function AdminReservationsPanel({
           )}
         </section>
 
-        <ReservationInspector
-          canManageReservations={canManageReservations}
-          reservation={selectedReservation}
-        />
+        <section className="section-card reservation-detail-section">
+          <div className="reservation-detail-section-head">
+            <div>
+              <strong>Dettaglio prenotazione</strong>
+              <p>
+                Il dettaglio si apre sotto la lista per non spezzare la lettura della pagina.
+              </p>
+            </div>
+          </div>
+
+          <ReservationInspector
+            canManageReservations={canManageReservations}
+            reservation={selectedReservation}
+          />
+        </section>
       </div>
     </section>
   );

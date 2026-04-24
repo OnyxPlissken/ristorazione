@@ -5609,17 +5609,35 @@ textarea:focus {
   color: #f8fafc;
 }
 
-.reservation-main-grid {
+.reservation-main-stack {
   display: grid;
-  grid-template-columns: minmax(0, 1.18fr) minmax(360px, 0.82fr);
   gap: 16px;
-  align-items: start;
 }
 
 .reservation-table-card,
 .reservation-inspector-card {
   display: grid;
   gap: 14px;
+}
+
+.reservation-detail-section {
+  display: grid;
+  gap: 14px;
+}
+
+.reservation-detail-section-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #edf2f7;
+}
+
+.reservation-detail-section-head p {
+  margin: 6px 0 0;
+  color: var(--muted);
+  line-height: 1.5;
 }
 
 .reservation-table-toolbar {
@@ -5738,13 +5756,19 @@ textarea:focus {
 }
 
 .reservation-inspector-card {
-  position: sticky;
-  top: 16px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
 
 .reservation-inspector-empty {
   min-height: 260px;
   align-content: center;
+  padding: 20px;
+  border-radius: 14px;
+  border: 1px dashed #cfd8e3;
+  background: #f8fafc;
 }
 
 .reservation-inspector-header {
@@ -5838,14 +5862,6 @@ textarea:focus {
 }
 
 @media (max-width: 1280px) {
-  .reservation-main-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .reservation-inspector-card {
-    position: static;
-  }
-
   .reservation-toolbar-compact {
     grid-template-columns: 1fr;
   }
