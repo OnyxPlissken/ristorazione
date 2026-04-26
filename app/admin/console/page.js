@@ -10,6 +10,10 @@ import {
 import { RESERVATION_STATUS_LABELS } from "../../../lib/constants";
 import { canAccessPage, requirePageAccess } from "../../../lib/permissions";
 import { getAdminConsoleLocations } from "../../../lib/queries";
+import {
+  YIELD_FEATURE_DEFINITIONS,
+  normalizeYieldRuleSettings
+} from "../../../lib/yield-rules";
 
 export const dynamic = "force-dynamic";
 
@@ -241,6 +245,7 @@ export default async function ConsoleAdminPage({ searchParams }) {
 
   const technical = selectedLocation.technicalSettings || {};
   const flags = featureSummary(technical, selectedLocation);
+  const yieldRuleSettings = normalizeYieldRuleSettings(technical.yieldRuleSettings || {});
   const moduleGroups = LOCATION_MODULE_DEFINITIONS.reduce((groups, definition) => {
     const cluster = definition.cluster;
     if (!groups.has(cluster)) {
@@ -1097,6 +1102,29 @@ export default async function ConsoleAdminPage({ searchParams }) {
                       <strong>Overbooking</strong>
                       <span>{technical.controlledOverbookingEnabled ? "Controllato" : "Disattivo"}</span>
                     </div>
+                  </div>
+
+                  <div className="console-feature-grid" hidden={selectedPanel !== "yield"}>
+                    {YIELD_FEATURE_DEFINITIONS.map((feature) => {
+                      const activeRules = feature.rules.filter(
+                        (rule) => yieldRuleSettings.rules[rule.key]?.enabled
+                      ).length;
+
+                      return (
+                        <Link
+                          className="console-feature-card"
+                          href={`/admin/console/funzioni/${feature.slug}`}
+                          key={feature.slug}
+                        >
+                          <span className="location-chip">{feature.eyebrow}</span>
+                          <strong>{feature.title}</strong>
+                          <p>{feature.description}</p>
+                          <small>
+                            {activeRules}/{feature.rules.length} regole attive
+                          </small>
+                        </Link>
+                      );
+                    })}
                   </div>
 
                   <div hidden={selectedPanel !== "tableRules"}>

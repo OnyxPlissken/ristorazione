@@ -216,6 +216,7 @@ model LocationTechnicalSetting {
   waitlistOfferTtlMinutes Int @default(8)
   ownerBriefEnabled      Boolean   @default(true)
   ownerBriefMorningHour  Int       @default(10)
+  yieldRuleSettings      Json?
   adaptiveDepositEnabled  Boolean   @default(false)
   adaptiveDepositAmount   Decimal?  @db.Decimal(10, 2)
   customerTableSelectionEnabled Boolean @default(false)

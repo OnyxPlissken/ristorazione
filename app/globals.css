@@ -3174,6 +3174,68 @@ textarea {
   color: var(--muted);
 }
 
+.console-feature-grid,
+.console-feature-nav,
+.yield-rule-list {
+  display: grid;
+  gap: 12px;
+}
+
+.console-feature-grid {
+  grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+}
+
+.console-feature-card,
+.console-feature-link {
+  display: grid;
+  gap: 8px;
+  padding: 14px;
+  border-radius: 14px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(255, 255, 255, 0.6);
+}
+
+.console-feature-card strong,
+.console-feature-link strong {
+  font-size: 0.98rem;
+}
+
+.console-feature-card p,
+.console-feature-link span,
+.yield-rule-copy {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.console-feature-card small {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.console-feature-link.active {
+  background: rgba(19, 35, 30, 0.08);
+  border-color: rgba(19, 35, 30, 0.16);
+}
+
+.yield-rule-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.yield-rule-module-toggle {
+  padding: 12px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(19, 35, 30, 0.08);
+  background: rgba(19, 35, 30, 0.05);
+}
+
+.yield-rule-note {
+  padding: 12px;
+}
+
 .console-inline-setting {
   display: grid;
   gap: 10px;
