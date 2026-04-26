@@ -21,22 +21,22 @@ const consoleSections = [
   {
     key: "generale",
     label: "Generale",
-    description: "Identita sede, moduli attivi e recapiti interni."
+    description: "Sede, moduli, recapiti."
   },
   {
     key: "comunicazioni",
     label: "Comunicazioni",
-    description: "SMS, link cliente e configurazione email."
+    description: "SMS, link, email."
   },
   {
     key: "integrazioni",
     label: "Integrazioni",
-    description: "Delivery, Google Business e pagamenti."
+    description: "Delivery, Google, pagamenti."
   },
   {
     key: "operativita",
     label: "Operativita",
-    description: "Motore prenotazioni, QR tavoli e riepiloghi."
+    description: "Tavoli, resa, servizio."
   }
 ];
 
@@ -111,22 +111,22 @@ const consolePanels = {
     {
       key: "yield",
       label: "Motore resa",
-      description: "Modulo, stato e indicatori principali."
+      description: "Tutto il motore."
     },
     {
       key: "tableRules",
       label: "Regole tavoli",
-      description: "Slot, pesi, aderenza e priorita clienti."
+      description: "Slot, pesi, priorita."
     },
     {
       key: "guardrails",
       label: "Guardrail servizio",
-      description: "Durata, cucina e overbooking controllato."
+      description: "Cucina e limiti."
     },
     {
       key: "brief",
       label: "Brief e waitlist",
-      description: "Owner brief e timer proposta coda."
+      description: "Brief, coda, alert."
     },
     {
       key: "qr",
@@ -180,6 +180,10 @@ function OverviewMetric({ label, value }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+function getFeatureEditableValueCount(feature) {
+  return feature.rules.reduce((total, rule) => total + 3 + rule.controls.length, 0);
 }
 
 function ConsoleModuleCard({
@@ -270,7 +274,7 @@ export default async function ConsoleAdminPage({ searchParams }) {
         <div className="panel-header">
           <div>
             <h2>Console Admin</h2>
-            <p>La sede attiva viene scelta una volta sola e qui entri direttamente nella configurazione tecnica.</p>
+            <p>Comandi compatti per sede, moduli, comunicazioni e motore tavoli.</p>
           </div>
           <div className="row-meta">
             <span>{locations.length} sedi configurabili</span>
@@ -1066,7 +1070,7 @@ export default async function ConsoleAdminPage({ searchParams }) {
                 >
                   <div className="console-block-head">
                     <h4>Motore resa sala</h4>
-                    <p>Regole operative per assegnare tavoli, proteggere la cucina e aumentare resa per posto/ora.</p>
+                    <p>Qui decidi cosa succede quando arriva una prenotazione, si libera un tavolo o la sala si riempie.</p>
                   </div>
 
                   <div className="console-side-summary" hidden={selectedPanel !== "yield"}>
@@ -1120,7 +1124,7 @@ export default async function ConsoleAdminPage({ searchParams }) {
                           <strong>{feature.title}</strong>
                           <p>{feature.description}</p>
                           <small>
-                            {activeRules}/{feature.rules.length} regole attive
+                            {activeRules}/{feature.rules.length} attive - {getFeatureEditableValueCount(feature)} valori
                           </small>
                         </Link>
                       );

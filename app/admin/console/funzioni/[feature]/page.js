@@ -25,6 +25,10 @@ function RuleMetric({ label, value }) {
   );
 }
 
+function countEditableValues(rules) {
+  return rules.reduce((total, rule) => total + 3 + rule.controls.length, 0);
+}
+
 function ruleApplyDescription(value) {
   return (
     YIELD_RULE_APPLY_OPTIONS.find((option) => option.value === value)?.description ||
@@ -47,6 +51,7 @@ function RuleControl({ control, rule }) {
         step={control.step || "1"}
         type={control.type || "number"}
       />
+      {control.help ? <small className="field-help">{control.help}</small> : null}
     </label>
   );
 }
@@ -100,9 +105,8 @@ export default async function YieldFeatureRulesPage({ params }) {
       <section className="panel-card">
         <div className="panel-header">
           <div>
-            <span className="eyebrow">{feature.eyebrow}</span>
             <h2>{feature.title}</h2>
-            <p>{feature.description}</p>
+            <p>{feature.promise}</p>
           </div>
           <div className="row-meta">
             <span>{selectedLocation.name}</span>
@@ -112,8 +116,9 @@ export default async function YieldFeatureRulesPage({ params }) {
 
         <div className="console-overview-strip">
           <RuleMetric label="Regole attive" value={`${activeRules}/${featureRules.length}`} />
-          <RuleMetric label="Quando" value="Per regola" />
-          <RuleMetric label="Modifiche" value="Immediate al salvataggio" />
+          <RuleMetric label="Valori modificabili" value={countEditableValues(featureRules)} />
+          <RuleMetric label="Applicazione" value="Per regola" />
+          <RuleMetric label="Salvataggio" value="Subito attivo" />
         </div>
       </section>
 
@@ -121,7 +126,7 @@ export default async function YieldFeatureRulesPage({ params }) {
         <aside className="console-side-rail">
           <div className="console-side-head">
             <h2>Funzioni</h2>
-            <p>Sottopagine dedicate del motore resa.</p>
+            <p>Scegli un set di regole e modificalo senza toccare codice.</p>
           </div>
 
           <div className="console-feature-nav">
@@ -135,15 +140,16 @@ export default async function YieldFeatureRulesPage({ params }) {
                 href={`/admin/console/funzioni/${item.slug}`}
                 key={item.slug}
               >
+                <span className="location-chip">{item.eyebrow}</span>
                 <strong>{item.title}</strong>
-                <span>{item.description}</span>
+                <span>{item.rules.length} regole</span>
               </Link>
             ))}
           </div>
 
           <div className="note-box">
-            <strong>Perche conta</strong>
-            <p>{feature.promise}</p>
+            <strong>In pratica</strong>
+            <p>{feature.description}</p>
           </div>
 
           <Link className="button button-muted button-full" href="/admin/console?section=operativita&panel=yield">
@@ -159,8 +165,8 @@ export default async function YieldFeatureRulesPage({ params }) {
             <fieldset className="form-fieldset" disabled={!canManageConsole}>
               <section className="console-block">
                 <div className="console-block-head">
-                  <h4>Stato modulo</h4>
-                  <p>Il motore deve essere attivo per far pesare le regole nelle automazioni.</p>
+                  <h4>Accensione modulo</h4>
+                  <p>Se e' spento, puoi salvare le regole ma non guidano le assegnazioni.</p>
                 </div>
 
                 <label className="checkbox-item yield-rule-module-toggle">
@@ -169,7 +175,7 @@ export default async function YieldFeatureRulesPage({ params }) {
                     name="yieldEngineEnabled"
                     type="checkbox"
                   />
-                  <span>Motore resa sala attivo per questa sede</span>
+                  <span>Motore resa sala attivo</span>
                 </label>
               </section>
 
@@ -177,24 +183,29 @@ export default async function YieldFeatureRulesPage({ params }) {
                 {featureRules.map((rule) => (
                   <section className="console-block yield-rule-card" key={rule.key}>
                     <div className="yield-rule-card-head">
-                      <label className="checkbox-item">
-                        <input
-                          defaultChecked={Boolean(rule.state?.enabled)}
-                          name={`${rule.key}.enabled`}
-                          type="checkbox"
-                        />
-                        <span>{rule.title}</span>
-                      </label>
+                      <div>
+                        <label className="checkbox-item">
+                          <input
+                            defaultChecked={Boolean(rule.state?.enabled)}
+                            name={`${rule.key}.enabled`}
+                            type="checkbox"
+                          />
+                          <span>{rule.title}</span>
+                        </label>
+                        <p className="yield-rule-copy">{rule.description}</p>
+                      </div>
                       <span className="location-chip highlighted">
                         {getYieldRuleStatusLabel(rule.state)}
                       </span>
                     </div>
 
-                    <p className="yield-rule-copy">{rule.description}</p>
+                    {rule.plainCopy ? (
+                      <p className="yield-rule-plain">{rule.plainCopy}</p>
+                    ) : null}
 
-                    <div className="form-grid">
+                    <div className="yield-rule-settings-grid">
                       <label>
-                        <span>Quando applicarla</span>
+                        <span>Quando usarla</span>
                         <select
                           defaultValue={rule.state?.applyWhen || rule.defaultApplyWhen}
                           name={`${rule.key}.applyWhen`}
@@ -207,7 +218,7 @@ export default async function YieldFeatureRulesPage({ params }) {
                         </select>
                       </label>
                       <label>
-                        <span>Peso decisionale</span>
+                        <span>Quanto pesa</span>
                         <input
                           defaultValue={rule.state?.priority ?? rule.defaultPriority}
                           max="100"
@@ -226,7 +237,12 @@ export default async function YieldFeatureRulesPage({ params }) {
                     </div>
 
                     <div className="note-box yield-rule-note">
-                      <strong>{rule.state?.applyWhen || rule.defaultApplyWhen}</strong>
+                      <strong>
+                        {YIELD_RULE_APPLY_OPTIONS.find(
+                          (option) =>
+                            option.value === (rule.state?.applyWhen || rule.defaultApplyWhen)
+                        )?.label || "Attiva"}
+                      </strong>
                       <p>{ruleApplyDescription(rule.state?.applyWhen || rule.defaultApplyWhen)}</p>
                     </div>
                   </section>
