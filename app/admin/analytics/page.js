@@ -72,6 +72,25 @@ export default async function AnalyticsPage() {
             value={data.stats.avgGuests.toFixed(1)}
             hint={`base sala ${data.stats.occupancySeatBase} posti`}
           />
+          <MetricCard
+            label="Resa posto/ora"
+            value={formatCurrency(data.stats.revenuePerSeatHour)}
+            hint="ricavo per seduta normalizzata"
+          />
+          <MetricCard
+            label="Durata prevista"
+            value={`${data.stats.avgPredictedDuration} min`}
+            hint="media stimata dal motore"
+          />
+          <MetricCard
+            label="Picco cucina"
+            value={`${data.stats.peakKitchenCovers} coperti`}
+            hint={
+              data.stats.peakKitchenLabel
+                ? `${data.stats.peakKitchenLabel} / ${data.stats.peakKitchenLoadPercent}%`
+                : "nessun picco"
+            }
+          />
           <MetricCard label="Transazioni POS 90g" value={data.stats.posTransactionsLast90d} />
           <MetricCard label={CUSTOMER_SCORE_BAND_SUMMARY_LABELS.A} value={data.stats.highValueCustomers} />
           <MetricCard label={CUSTOMER_SCORE_BAND_SUMMARY_LABELS.D} value={data.stats.riskCustomers} />
@@ -125,6 +144,7 @@ export default async function AnalyticsPage() {
               <span>Tavolo</span>
               <span>Prenotazioni</span>
               <span>Ricavi</span>
+              <span>Posto/ora</span>
             </div>
 
             {data.tableRevenue.map((table) => (
@@ -132,11 +152,65 @@ export default async function AnalyticsPage() {
                 <strong>{table.label}</strong>
                 <span>{table.reservations}</span>
                 <span>{formatCurrency(table.revenue)}</span>
+                <span>{formatCurrency(table.revenuePerSeatHour)}</span>
               </div>
             ))}
 
             {data.tableRevenue.length === 0 ? (
               <p className="empty-copy">Nessun ricavo agganciato ai tavoli per il periodo selezionato.</p>
+            ) : null}
+          </div>
+        </section>
+      </section>
+
+      <section className="analytics-grid">
+        <section className="panel-card">
+          <div className="panel-header">
+            <div>
+              <h2>Owner Daily Brief</h2>
+              <p>Riepilogo operativo sintetico per decidere cosa presidiare prima del servizio.</p>
+            </div>
+          </div>
+
+          <div className="data-list">
+            {data.ownerBrief.notes.map((note) => (
+              <div className="data-row" key={note}>
+                <strong>{note}</strong>
+              </div>
+            ))}
+            {data.ownerBrief.notes.length === 0 ? (
+              <p className="empty-copy">Nessuna criticita o opportunita rilevante per oggi.</p>
+            ) : null}
+          </div>
+        </section>
+
+        <section className="panel-card">
+          <div className="panel-header">
+            <div>
+              <h2>Carico cucina</h2>
+              <p>Coperti per finestra operativa, utile per evitare picchi ingestibili.</p>
+            </div>
+          </div>
+
+          <div className="analytics-table">
+            <div className="analytics-table-head">
+              <span>Fascia</span>
+              <span>Prenotazioni</span>
+              <span>Coperti</span>
+              <span>Carico</span>
+            </div>
+
+            {data.kitchenLoad.map((bucket) => (
+              <div className="analytics-table-row" key={bucket.key}>
+                <strong>{bucket.label}</strong>
+                <span>{bucket.reservations}</span>
+                <span>{bucket.covers}</span>
+                <span>{bucket.maxCovers ? `${bucket.loadPercent}%` : "n.d."}</span>
+              </div>
+            ))}
+
+            {data.kitchenLoad.length === 0 ? (
+              <p className="empty-copy">Ancora nessun dato di carico cucina per il periodo.</p>
             ) : null}
           </div>
         </section>

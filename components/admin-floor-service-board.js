@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { assignFloorReservationAction } from "../lib/actions/admin-actions";
+import {
+  assignFloorReservationAction,
+  optimizeFloorAssignmentsAction
+} from "../lib/actions/admin-actions";
 import {
   FLOOR_PLAN_STAGE_HEIGHT,
   FLOOR_PLAN_STAGE_WIDTH,
@@ -26,6 +29,7 @@ function canDropReservationOnTable(reservation, table) {
 export default function AdminFloorServiceBoard({
   canManageReservations,
   canManageTables,
+  kitchenLoad = [],
   location,
   reservations,
   selectedDate,
@@ -54,6 +58,8 @@ export default function AdminFloorServiceBoard({
   const unassignedReservations = visibleReservations.filter(
     (reservation) => reservation.assignedTableIds.length === 0
   );
+  const yieldEngineEnabled = Boolean(location?.technicalSettings?.yieldEngineEnabled);
+  const peakKitchenLoad = [...kitchenLoad].sort((left, right) => right.covers - left.covers)[0] || null;
 
   async function assignReservation(tableId) {
     if (!dragReservationId || !canManageReservations) {
@@ -66,6 +72,27 @@ export default function AdminFloorServiceBoard({
 
     startTransition(async () => {
       const result = await assignFloorReservationAction(formData);
+      setFeedback({
+        error: result?.error || "",
+        success: result?.success || ""
+      });
+      setDragReservationId("");
+      setHoveredTableId("");
+      router.refresh();
+    });
+  }
+
+  async function optimizeAssignments() {
+    if (!canManageReservations || !location?.id) {
+      return;
+    }
+
+    const formData = new FormData();
+    formData.set("locationId", location.id);
+    formData.set("date", selectedDate);
+
+    startTransition(async () => {
+      const result = await optimizeFloorAssignmentsAction(formData);
       setFeedback({
         error: result?.error || "",
         success: result?.success || ""
@@ -90,6 +117,16 @@ export default function AdminFloorServiceBoard({
             <Link className="button button-muted" href={`/admin/tavoli?locationId=${location.id}&view=layout`}>
               Apri editor layout
             </Link>
+          ) : null}
+          {canManageReservations && yieldEngineEnabled ? (
+            <button
+              className="button button-secondary"
+              disabled={pending}
+              onClick={() => void optimizeAssignments()}
+              type="button"
+            >
+              Ottimizza assegnazioni
+            </button>
           ) : null}
         </div>
       </div>
@@ -119,6 +156,17 @@ export default function AdminFloorServiceBoard({
             </p>
           </div>
 
+          {peakKitchenLoad ? (
+            <div className="note-box">
+              <strong>Picco cucina</strong>
+              <p>
+                {peakKitchenLoad.label}: {peakKitchenLoad.covers}
+                {peakKitchenLoad.maxCovers ? `/${peakKitchenLoad.maxCovers}` : ""} coperti
+                {peakKitchenLoad.overloaded ? " - oltre soglia" : ""}
+              </p>
+            </div>
+          ) : null}
+
           <div className="floor-drag-list">
             {unassignedReservations.map((reservation) => (
               <button
@@ -135,6 +183,13 @@ export default function AdminFloorServiceBoard({
                 <strong>{reservation.guestName}</strong>
                 <span>{reservation.guests} coperti</span>
                 <small>{formatDateTime(reservation.dateTime)}</small>
+                {reservation.engineScore ? (
+                  <small>
+                    Motore {reservation.engineRank} / {reservation.engineScore}:{" "}
+                    {reservation.recommendedTableCodes?.join(" + ")}
+                  </small>
+                ) : null}
+                {reservation.engineReason ? <small>{reservation.engineReason}</small> : null}
               </button>
             ))}
           </div>

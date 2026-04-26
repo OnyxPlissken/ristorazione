@@ -53,6 +53,7 @@ export default async function SalaPage({ searchParams }) {
           canManageReservations={canManageReservations}
           canManageTables={canManageTables}
           location={data.selectedLocation}
+          kitchenLoad={data.kitchenLoad}
           reservations={data.reservations}
           selectedDate={dateText}
           zones={data.zones}

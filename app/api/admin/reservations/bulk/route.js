@@ -85,7 +85,8 @@ export async function POST(request) {
         reservation.guests,
         reservation.dateTime,
         reservation.location.settings?.durationMinutes || 120,
-        reservation.id
+        reservation.id,
+        reservation.location.technicalSettings || {}
       );
 
       nextStatus = assignment ? "CONFERMATA" : "IN_ATTESA";

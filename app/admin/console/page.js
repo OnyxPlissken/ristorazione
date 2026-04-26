@@ -105,9 +105,24 @@ const consolePanels = {
   ],
   operativita: [
     {
-      key: "engine",
-      label: "Motore tavoli",
-      description: "Slot, waitlist, scoring e deposito."
+      key: "yield",
+      label: "Motore resa",
+      description: "Modulo, stato e indicatori principali."
+    },
+    {
+      key: "tableRules",
+      label: "Regole tavoli",
+      description: "Slot, pesi, aderenza e priorita clienti."
+    },
+    {
+      key: "guardrails",
+      label: "Guardrail servizio",
+      description: "Durata, cucina e overbooking controllato."
+    },
+    {
+      key: "brief",
+      label: "Brief e waitlist",
+      description: "Owner brief e timer proposta coda."
     },
     {
       key: "qr",
@@ -121,6 +136,19 @@ const consolePanels = {
     }
   ]
 };
+
+const assignmentStrategies = [
+  { value: "BALANCED", label: "Bilanciata" },
+  { value: "FIRST_COME", label: "Ordine richiesta" },
+  { value: "REVENUE", label: "Ricavi e coperti" },
+  { value: "VIP", label: "Cliente migliore" },
+  { value: "FIT", label: "Aderenza tavolo" }
+];
+
+const assignmentSlotModes = [
+  { value: "FLEXIBLE", label: "Slot flessibile" },
+  { value: "PRECISE", label: "Slot preciso" }
+];
 
 function featureSummary(technical, location) {
   return getEnabledLocationModules({
@@ -541,7 +569,7 @@ export default async function ConsoleAdminPage({ searchParams }) {
                       <textarea
                         defaultValue={
                           technical.waitlistSmsTemplate ||
-                          "Ciao {{cliente}}, si e' liberato un tavolo da {{sede}} per {{data}} alle {{orario}}. Gestisci la prenotazione qui: {{link_prenotazione}}"
+                          "Ciao {{cliente}}, si e' liberato un tavolo da {{sede}} per {{data}} alle {{orario}}. Conferma entro {{scadenza_proposta}} qui: {{link_prenotazione}}"
                         }
                         name="waitlistSmsTemplate"
                         rows="4"
@@ -1027,35 +1055,285 @@ export default async function ConsoleAdminPage({ searchParams }) {
                   </div>
                 </div>
 
-                <section className="console-block" hidden={selectedPanel !== "engine"}>
+                <section
+                  className="console-block"
+                  hidden={!["yield", "tableRules", "guardrails", "brief"].includes(selectedPanel)}
+                >
                   <div className="console-block-head">
-                    <h4>Motore tavoli e booking</h4>
-                    <p>Stato dei moduli che impattano occupazione, scoring e recupero domanda.</p>
+                    <h4>Motore resa sala</h4>
+                    <p>Regole operative per assegnare tavoli, proteggere la cucina e aumentare resa per posto/ora.</p>
                   </div>
 
-                  <div className="console-side-summary">
+                  <div className="console-side-summary" hidden={selectedPanel !== "yield"}>
                     <div>
-                      <strong>Ottimizzazione slot</strong>
-                      <span>{technical.slotOptimizationEnabled !== false ? "Attiva" : "Disattiva"}</span>
+                      <strong>Modulo</strong>
+                      <span>{technical.yieldEngineEnabled ? "Attivo" : "Disattivo"}</span>
                     </div>
                     <div>
-                      <strong>Waitlist intelligente</strong>
-                      <span>{technical.smartWaitlistEnabled !== false ? "Attiva" : "Disattiva"}</span>
+                      <strong>Strategia</strong>
+                      <span>{technical.tableAssignmentStrategy || "BALANCED"}</span>
                     </div>
                     <div>
-                      <strong>CRM scoring</strong>
-                      <span>{technical.customerScoringEnabled !== false ? "Attivo" : "Disattivo"}</span>
+                      <strong>Slot</strong>
+                      <span>{technical.tableAssignmentSlotMode || "FLEXIBLE"}</span>
                     </div>
                     <div>
-                      <strong>Deposito adattivo</strong>
+                      <strong>Buffer turnover</strong>
+                      <span>{technical.tableAssignmentTurnoverBufferMinutes ?? 15} min</span>
+                    </div>
+                    <div>
+                      <strong>Occupazione minima</strong>
+                      <span>{technical.tableAssignmentMinOccupancyPercent ?? 50}%</span>
+                    </div>
+                    <div>
+                      <strong>Carico cucina</strong>
                       <span>
-                        {technical.adaptiveDepositEnabled
-                          ? technical.adaptiveDepositAmount
-                            ? `EUR ${Number(technical.adaptiveDepositAmount).toFixed(2)}`
-                            : "Attivo senza importo"
+                        {technical.kitchenLoadGuardEnabled !== false
+                          ? `${technical.kitchenLoadMaxCovers ?? 40} coperti/${technical.kitchenLoadWindowMinutes ?? 30} min`
                           : "Disattivo"}
                       </span>
                     </div>
+                    <div>
+                      <strong>Overbooking</strong>
+                      <span>{technical.controlledOverbookingEnabled ? "Controllato" : "Disattivo"}</span>
+                    </div>
+                  </div>
+
+                  <div hidden={selectedPanel !== "tableRules"}>
+                  <div className="form-grid">
+                    <label>
+                      <span>Strategia assegnazione</span>
+                      <select
+                        defaultValue={technical.tableAssignmentStrategy || "BALANCED"}
+                        name="tableAssignmentStrategy"
+                      >
+                        {assignmentStrategies.map((strategy) => (
+                          <option key={strategy.value} value={strategy.value}>
+                            {strategy.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span>Modalita slot</span>
+                      <select
+                        defaultValue={technical.tableAssignmentSlotMode || "FLEXIBLE"}
+                        name="tableAssignmentSlotMode"
+                      >
+                        {assignmentSlotModes.map((mode) => (
+                          <option key={mode.value} value={mode.value}>
+                            {mode.label}
+                          </option>
+                        ))}
+                      </select>
+                    </label>
+                    <label>
+                      <span>Flessibilita slot (min)</span>
+                      <input
+                        defaultValue={technical.tableAssignmentFlexMinutes ?? 30}
+                        min="0"
+                        name="tableAssignmentFlexMinutes"
+                        type="number"
+                      />
+                    </label>
+                    <label>
+                      <span>Buffer riassetto tavolo (min)</span>
+                      <input
+                        defaultValue={technical.tableAssignmentTurnoverBufferMinutes ?? 15}
+                        min="0"
+                        name="tableAssignmentTurnoverBufferMinutes"
+                        type="number"
+                      />
+                    </label>
+                    <label>
+                      <span>Occupazione minima tavolo (%)</span>
+                      <input
+                        defaultValue={technical.tableAssignmentMinOccupancyPercent ?? 50}
+                        max="100"
+                        min="0"
+                        name="tableAssignmentMinOccupancyPercent"
+                        type="number"
+                      />
+                    </label>
+                    <label>
+                      <span>Numero massimo tavoli combinati</span>
+                      <input
+                        defaultValue={technical.tableAssignmentMaxTables ?? 4}
+                        min="1"
+                        name="tableAssignmentMaxTables"
+                        type="number"
+                      />
+                    </label>
+                    <label className="checkbox-item">
+                      <input
+                        defaultChecked={technical.tableAssignmentCombineTablesEnabled !== false}
+                        name="tableAssignmentCombineTablesEnabled"
+                        type="checkbox"
+                      />
+                      <span>Consenti combinazioni tavoli</span>
+                    </label>
+                  </div>
+
+                  <div className="console-block-head">
+                    <h4>Pesi decisionali</h4>
+                    <p>Più alto è il peso, più quella regola influenza l'assegnazione automatica.</p>
+                  </div>
+
+                  <div className="form-grid">
+                    <label>
+                      <span>Aderenza tavolo</span>
+                      <input
+                        defaultValue={technical.tableAssignmentWeightTableFit ?? 30}
+                        min="0"
+                        name="tableAssignmentWeightTableFit"
+                        type="number"
+                      />
+                    </label>
+                    <label>
+                      <span>Numero coperti</span>
+                      <input
+                        defaultValue={technical.tableAssignmentWeightPartySize ?? 25}
+                        min="0"
+                        name="tableAssignmentWeightPartySize"
+                        type="number"
+                      />
+                    </label>
+                    <label>
+                      <span>Priorita cliente</span>
+                      <input
+                        defaultValue={technical.tableAssignmentWeightCustomerPriority ?? 20}
+                        min="0"
+                        name="tableAssignmentWeightCustomerPriority"
+                        type="number"
+                      />
+                    </label>
+                    <label>
+                      <span>Carrello medio</span>
+                      <input
+                        defaultValue={technical.tableAssignmentWeightAverageSpend ?? 15}
+                        min="0"
+                        name="tableAssignmentWeightAverageSpend"
+                        type="number"
+                      />
+                    </label>
+                    <label>
+                      <span>Ordine richiesta</span>
+                      <input
+                        defaultValue={technical.tableAssignmentWeightCreatedAt ?? 10}
+                        min="0"
+                        name="tableAssignmentWeightCreatedAt"
+                        type="number"
+                      />
+                    </label>
+                  </div>
+                  </div>
+
+                  <div hidden={selectedPanel !== "guardrails"}>
+                  <div className="console-block-head">
+                    <h4>Guardrail operativi</h4>
+                    <p>Limiti che proteggono cucina, servizio e promessa fatta al cliente.</p>
+                  </div>
+
+                  <div className="form-grid">
+                    <label className="checkbox-item">
+                      <input
+                        defaultChecked={technical.predictiveDurationEnabled !== false}
+                        name="predictiveDurationEnabled"
+                        type="checkbox"
+                      />
+                      <span>Durata tavolo predittiva</span>
+                    </label>
+                    <label className="checkbox-item">
+                      <input
+                        defaultChecked={technical.kitchenLoadGuardEnabled !== false}
+                        name="kitchenLoadGuardEnabled"
+                        type="checkbox"
+                      />
+                      <span>Proteggi carico cucina</span>
+                    </label>
+                    <label>
+                      <span>Finestra carico cucina (min)</span>
+                      <input
+                        defaultValue={technical.kitchenLoadWindowMinutes ?? 30}
+                        min="5"
+                        name="kitchenLoadWindowMinutes"
+                        type="number"
+                      />
+                    </label>
+                    <label>
+                      <span>Coperti massimi per finestra</span>
+                      <input
+                        defaultValue={technical.kitchenLoadMaxCovers ?? 40}
+                        min="1"
+                        name="kitchenLoadMaxCovers"
+                        type="number"
+                      />
+                    </label>
+                    <label className="checkbox-item">
+                      <input
+                        defaultChecked={Boolean(technical.controlledOverbookingEnabled)}
+                        name="controlledOverbookingEnabled"
+                        type="checkbox"
+                      />
+                      <span>Overbooking controllato</span>
+                    </label>
+                    <label>
+                      <span>Extra coperti massimi</span>
+                      <input
+                        defaultValue={technical.controlledOverbookingMaxCovers ?? 0}
+                        min="0"
+                        name="controlledOverbookingMaxCovers"
+                        type="number"
+                      />
+                    </label>
+                    <label>
+                      <span>Affidabilita minima overbooking</span>
+                      <input
+                        defaultValue={technical.controlledOverbookingMinReliabilityScore ?? 70}
+                        max="100"
+                        min="0"
+                        name="controlledOverbookingMinReliabilityScore"
+                        type="number"
+                      />
+                    </label>
+                  </div>
+                  </div>
+
+                  <div hidden={selectedPanel !== "brief"}>
+                  <div className="console-block-head">
+                    <h4>Brief e waitlist</h4>
+                    <p>Timer delle proposte in coda e riepilogo giornaliero per il proprietario.</p>
+                  </div>
+
+                  <div className="form-grid">
+                    <label>
+                      <span>Timer proposta waitlist (min)</span>
+                      <input
+                        defaultValue={technical.waitlistOfferTtlMinutes ?? 8}
+                        min="1"
+                        name="waitlistOfferTtlMinutes"
+                        type="number"
+                      />
+                    </label>
+                    <label className="checkbox-item">
+                      <input
+                        defaultChecked={technical.ownerBriefEnabled !== false}
+                        name="ownerBriefEnabled"
+                        type="checkbox"
+                      />
+                      <span>Owner Daily Brief</span>
+                    </label>
+                    <label>
+                      <span>Ora brief mattutino</span>
+                      <input
+                        defaultValue={technical.ownerBriefMorningHour ?? 10}
+                        max="23"
+                        min="0"
+                        name="ownerBriefMorningHour"
+                        type="number"
+                      />
+                    </label>
+                  </div>
                   </div>
                 </section>
 
